@@ -1,58 +1,258 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SxoliGrid
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Εφαρμογή διαχείρισης σχολής, στούντιο και φροντιστηρίου. Δείχνει δημόσια το εβδομαδιαίο πρόγραμμα χωρίς ονόματα καθηγητών, και κρατά χωριστά τη γραμματεία, τους καθηγητές, τους μαθητές και τα οικονομικά του ιδιοκτήτη.
 
-## About Laravel
+Η διεπαφή είναι στα ελληνικά και στα αγγλικά. Η προεπιλογή είναι τα ελληνικά.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Τι περιλαμβάνει
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Δημόσιο εβδομαδιαίο πρόγραμμα μαθημάτων, αιθουσών και ωρών.
+- Σύνδεση με συνεδρία και ρόλους: ιδιοκτήτης, γραμματεία, καθηγητής, μαθητής.
+- Μαθήματα τύπου τμήμα ή ιδιαίτερο. Η πληρωμή του μαθήματος είναι μήνας, τρίμηνο, πακέτο προσφοράς ή drop-in. Το drop-in χρεώνει μόνο τη συνεδρία που παρακολουθεί ο μαθητής.
+- Ωράριο ανά ημέρα, ώρα, αίθουσα και έναν ή περισσότερους καθηγητές. Κάθε ώρα μπορεί να μείνει εκτός αρχικής σελίδας.
+- Εγγραφές μαθητών σε μαθήματα, με κατάσταση ενεργή, παύση ή ολοκληρωμένη.
+- Πακέτα διάρκειας ή συνεδριών, ανάθεση συνδρομής και αυτόματη χρέωση.
+- Πληρωμές: συνδρομή, εισιτήριο/πακέτο ή ιδιαίτερο, με κατάσταση πληρωμένο, εκκρεμεί ή ληξιπρόθεσμο.
+- Παρουσίες. Μία παρουσία την ημέρα ανά μαθητή και τμήμα μειώνει το πακέτο συνεδριών.
+- Σημειώσεις προόδου και βαθμός τεστ ως κείμενο.
+- Ιδιαίτερα μαθήματα: αίτημα από τον μαθητή, καταχώριση από τη γραμματεία, επιβεβαίωση ή ακύρωση από τον καθηγητή.
+- Εκδηλώσεις και συμμετέχοντες με ρόλο ερμηνευτή, συμμετέχοντα, δασκάλου ή βοηθού.
+- Προτάσεις ευελιξίας, χειροκίνητα ή με σάρωση κενών του ωραρίου.
+- Οικονομικά μήνα: έσοδα, έξοδα, μισθοδοσία και καθαρό αποτέλεσμα.
+- Διακόπτης γλώσσας EL | EN, ορατός και χωρίς σύνδεση.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Ρόλοι και πρόσβαση
 
-## Learning Laravel
+| Ρόλος | Τι βλέπει και τι αλλάζει |
+| --- | --- |
+| Επισκέπτης | Το δημόσιο πρόγραμμα, με το εισαγωγικό της σχολής, και τη σελίδα σύνδεσης. |
+| Ιδιοκτήτης | Όλη τη γραμματεία, συν τους λογαριασμούς ιδιοκτήτη και την πρόσβαση στα οικονομικά. Βλέπει πάντα τα οικονομικά. |
+| Γραμματεία | Χρήστες, μαθήματα, ωράριο, εγγραφές, πακέτα, συνδρομές, πληρωμές, εκδηλώσεις, ιδιαίτερα, προτάσεις και ρυθμίσεις. Από τις ρυθμίσεις κατεβάζει αντίγραφο της βάσης, την επαναφέρει και προσθέτει ή αφαιρεί τα demo data. Δεν μπορεί να φτιάξει ή να αλλάξει ιδιοκτήτη. Τα οικονομικά τα βλέπει μόνο αν ο ιδιοκτήτης της δώσει άδεια. |
+| Καθηγητής | Τα δικά του τμήματα, παρουσίες και σημειώσεις, τους μαθητές αυτών των τμημάτων, τα ιδιαίτερα που τον αφορούν, τις εκδηλώσεις και τις προτάσεις που του απευθύνονται. |
+| Μαθητής | Το πρόγραμμά του, τις συνδρομές, τις χρεώσεις, τις σημειώσεις προόδου, τα ιδιαίτερα και τις εκδηλώσεις του. Μπορεί να ζητήσει ιδιαίτερο. |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Μετά τη σύνδεση, το `/dashboard` στέλνει ιδιοκτήτη και γραμματεία στο `/admin`, τον καθηγητή στο `/teacher` και τον μαθητή στο `/student`.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Το δημόσιο πρόγραμμα δείχνει μόνο τις ώρες που η γραμματεία έχει σημειώσει για την αρχική σελίδα και δεν επιστρέφει `teacher_id` ούτε όνομα καθηγητή. Με σύνδεση, το εισαγωγικό μπλοκ της αρχικής δεν εμφανίζεται. Το προσωπικό πρόγραμμα δείχνει όλους τους καθηγητές της ώρας.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Απαιτήσεις
 
-## Agentic Development
+- PHP 8.3 ή νεότερο
+- Composer
+- Node.js και npm
+- SQLite (έρχεται με την PHP· δεν χρειάζεται ξεχωριστός server βάσης)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Εξαρτήσεις εφαρμογής: Laravel 13, Inertia Laravel 3, Vue 3, Vite 8, Tailwind CSS 4.
+
+## Εγκατάσταση
+
+Από τη ρίζα του monorepo:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cd packages/sxoligrid
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate:fresh --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Το `php artisan migrate` αρκεί για το σχήμα και για τον λογαριασμό γραμματείας. Το `--seed` προσθέτει τον ιδιοκτήτη, τους καθηγητές, τους μαθητές και τα δοκιμαστικά μαθήματα. Χρησιμοποιεί τον admin του migration και δεν τον ξαναδημιουργεί.
 
-## Contributing
+Υπάρχει και έτοιμο script, χωρίς demo δεδομένα πέρα από τον admin του migration:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer run setup
+```
 
-## Code of Conduct
+Αυτό κάνει `composer install`, δημιουργεί το `.env` αν λείπει, παράγει `APP_KEY`, τρέχει τα migrations και χτίζει τα frontend assets.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Εκκίνηση
 
-## Security Vulnerabilities
+Για καθημερινή ανάπτυξη, server, ουρά, logs και Vite μαζί:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer run dev
+```
 
-## License
+Η εφαρμογή ακούει στο `http://127.0.0.1:8000`.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Χωριστά:
+
+```bash
+npm run dev
+php artisan serve
+```
+
+Για στατικά assets χωρίς Vite dev server:
+
+```bash
+npm run build
+php artisan serve
+```
+
+## Ρύθμιση
+
+Το `.env` βγαίνει από το `.env.example`. Το `php artisan key:generate` γεμίζει το `APP_KEY`. Μην τον μοιράζεσαι και μην τον βάζεις στο git.
+
+| Μεταβλητή | Τιμή στο παράδειγμα | Σημασία |
+| --- | --- | --- |
+| `APP_NAME` | `SxoliGrid` | Όνομα εφαρμογής και τίτλος σελίδας. |
+| `APP_ENV` | `local` | Περιβάλλον. Σε production βάλε `production`. |
+| `APP_DEBUG` | `true` | Λεπτομέρειες σφαλμάτων. Σε production βάλε `false`. |
+| `APP_URL` | `http://localhost:8000` | Βασικό URL. |
+| `APP_LOCALE` | `en` | Δεν ορίζει τη γλώσσα της διεπαφής. Δες παρακάτω. |
+| `APP_FALLBACK_LOCALE` | `en` | Εφεδρική γλώσσα όταν λείπει μεταφραστικό κλειδί. |
+| `DB_CONNECTION` | `sqlite` | Βάση. Το αρχείο είναι το `database/database.sqlite`. |
+| `SESSION_DRIVER` | `database` | Οι συνεδρίες γράφονται στον πίνακα `sessions`. |
+| `SESSION_LIFETIME` | `120` | Διάρκεια συνεδρίας σε λεπτά. |
+| `QUEUE_CONNECTION` | `database` | Ουρά στον πίνακα `jobs`. Το `composer run dev` σηκώνει worker. |
+| `CACHE_STORE` | `database` | Cache στον πίνακα `cache`. |
+| `MAIL_MAILER` | `log` | Τα email γράφονται στο log. Δεν στέλνονται. |
+| `LOG_LEVEL` | `debug` | Επίπεδο καταγραφής. |
+| `VITE_APP_NAME` | ίδιο με `APP_NAME` | Όνομα που βλέπει το frontend build. |
+
+Για MySQL ή MariaDB, άλλαξε το `DB_CONNECTION` και ξεσχόλιασε `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` και `DB_PASSWORD` στο `.env`. Μετά τρέξε ξανά τα migrations.
+
+Τα tests δεν χρησιμοποιούν το `database.sqlite`. Τρέχουν σε μνήμη SQLite, όπως ορίζει το `phpunit.xml`.
+
+## Γλώσσα
+
+Υποστηρίζονται `el` και `en`. Αν δεν υπάρχει επιλογή, η γλώσσα είναι ελληνικά.
+
+Η επιλογή διαβάζεται με αυτή τη σειρά:
+
+1. Τιμή `locale` στη συνεδρία.
+2. Cookie `locale`.
+3. Ελληνικά.
+
+Ο διακόπτης στέλνει `POST /locale`. Άγνωστη τιμή, για παράδειγμα `fr`, απορρίπτεται και η γλώσσα μένει ελληνικά. Τα μηνύματα επιτυχίας, τα σφάλματα και οι προτάσεις κενού ακολουθούν την ενεργή γλώσσα τη στιγμή που δημιουργούνται. Ονόματα, τίτλοι μαθημάτων και σημειώσεις μένουν όπως καταχωρίστηκαν.
+
+Τα αρχεία κειμένου είναι τα `lang/el/ui.php` και `lang/en/ui.php`. Οι ελληνικοί κανόνες validation είναι στο `lang/el/validation.php`.
+
+## Βάση και λογαριασμοί
+
+Migrations:
+
+- `0001_01_01_000000_create_users_table.php` δημιουργεί `users`, `password_reset_tokens` και `sessions`.
+- `0001_01_01_000001_create_cache_table.php` δημιουργεί τους πίνακες cache.
+- `0001_01_01_000002_create_jobs_table.php` δημιουργεί τους πίνακες ουράς.
+- `2026_10_22_000001_create_academy_tables.php` προσθέτει ρόλο, τηλέφωνο και άδεια οικονομικών στους χρήστες, δημιουργεί τους πίνακες της σχολής και εισάγει τον admin.
+
+Πίνακες σχολής: `courses`, `class_schedules`, `enrollments`, `subscriptions_and_payments`, `private_lessons`, `flex_suggestions`, `packages`, `student_subscriptions`, `events`, `event_participants`, `lesson_logs`, `expenses`, `teacher_payrolls`, `attendances`.
+
+Ο admin του migration:
+
+| Πεδίο | Τιμή |
+| --- | --- |
+| Όνομα | Νίκος Αθανασίου |
+| Email | `admin@sxoligrid.test` |
+| Κωδικός | `password` |
+| Ρόλος | γραμματεία |
+| Τηλέφωνο | `6900000002` |
+| Οικονομικά | όχι |
+
+Με `php artisan db:seed` ή `migrate:fresh --seed` προστίθενται και οι υπόλοιποι δοκιμαστικοί λογαριασμοί. Κοινός κωδικός: `password`.
+
+| Ρόλος | Όνομα | Email |
+| --- | --- | --- |
+| Ιδιοκτήτης | Ελένη Οικονόμου | `owner@sxoligrid.test` |
+| Γραμματεία | Νίκος Αθανασίου | `admin@sxoligrid.test` |
+| Καθηγήτρια | Μαρία Παπαδοπούλου | `teacher@sxoligrid.test` |
+| Καθηγητής | Κώστας Δημητρίου | `teacher2@sxoligrid.test` |
+| Μαθητής | Γιάννης Αλεξίου | `student@sxoligrid.test` |
+| Μαθήτρια | Άννα Βασιλείου | `student2@sxoligrid.test` |
+
+Το seed γεμίζει επίσης μαθήματα (Μαθηματικά Λυκείου, English B2, Salsa, Πιάνο), ωράριο, εγγραφές, πακέτα, συνδρομές, πληρωμές, ιδιαίτερα, μία εκδήλωση, παρουσίες, σημειώσεις, έξοδα και μισθοδοσία.
+
+Νέος κωδικός από τη φόρμα χρηστών πρέπει να έχει τουλάχιστον 8 χαρακτήρες. Στην επεξεργασία, κενός κωδικός αφήνει τον παλιό.
+
+## Διαδρομές
+
+Δημόσιες:
+
+| Μέθοδος | Διαδρομή | Λειτουργία |
+| --- | --- | --- |
+| GET | `/` | Εβδομαδιαίο πρόγραμμα. |
+| POST | `/locale` | Αλλαγή γλώσσας σε `el` ή `en`. |
+| GET, POST | `/login` | Σύνδεση. |
+
+Με σύνδεση:
+
+| Μέθοδος | Διαδρομή | Ποιος |
+| --- | --- | --- |
+| POST | `/logout` | Όλοι οι συνδεδεμένοι. |
+| GET | `/dashboard` | Ανακατεύθυνση ανά ρόλο. |
+| GET, POST, PUT, DELETE | `/admin/users` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PUT, DELETE | `/admin/courses` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PUT, DELETE | `/admin/schedules` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PATCH, DELETE | `/admin/enrollments` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PUT, DELETE | `/admin/packages` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST | `/admin/subscriptions` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PATCH | `/admin/payments` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, DELETE | `/admin/events` και συμμετέχοντες | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PATCH | `/admin/private-lessons` | Ιδιοκτήτης και γραμματεία. |
+| GET, POST, PATCH | `/admin/flex-suggestions` | Ιδιοκτήτης και γραμματεία. Το `POST /admin/flex-suggestions/scan` ψάχνει κενά. |
+| GET, POST, DELETE | `/admin/settings` | Μόνο γραμματεία. Λήψη αντιγράφου (`GET /admin/settings/backup`), επαναφορά (`POST /admin/settings/restore`), προσθήκη ή αφαίρεση demo data (`POST` και `DELETE /admin/settings/demo`) και κείμενα/λογότυπο της αρχικής (`POST /admin/settings/landing`) στα ελληνικά και στα αγγλικά. |
+| GET | `/teacher` | Καθηγητής. |
+| GET, POST | `/teacher/schedules/{id}/attendance` | Καθηγητής. |
+| GET | `/teacher/students` | Καθηγητής. |
+| GET, PATCH | `/teacher/flex-suggestions` | Καθηγητής. |
+| GET | `/teacher/events` και συμμετέχοντες | Καθηγητής. |
+| PATCH | `/teacher/private-lessons/{id}` | Καθηγητής. |
+| GET | `/student` | Μαθητής. |
+| POST | `/student/private-lessons` | Μαθητής. |
+| GET, POST, PATCH, DELETE | `/owner/finances`, `/owner/expenses`, `/owner/payrolls` | Ιδιοκτήτης, ή γραμματεία με άδεια οικονομικών. |
+
+## Κανόνες λειτουργίας
+
+### Πακέτα και συνδρομές
+
+Κενός αριθμός συνεδριών σημαίνει πακέτο διάρκειας, χωρίς μείωση συνεδριών. Έως 31 μέρες καταχωρίζεται ως μήνας και περισσότερες ως τρίμηνο. Συμπληρωμένος αριθμός σημαίνει πακέτο προσφοράς και μειώνεται με την παρουσία. Το drop-in δεν είναι πακέτο. Ορίζεται στο μάθημα και πληρώνεται ανά συνεδρία.
+
+Η ανάθεση δημιουργεί συνδρομή και πληρωμή με το ποσό του πακέτου. Η λήξη υπολογίζεται από την έναρξη συν τις μέρες διάρκειας. Χωρίς μέρες διάρκειας, δεν μπαίνει ημερομηνία λήξης.
+
+### Παρουσίες
+
+Ο καθηγητής σημειώνει παρουσία μόνο για μαθητή με ενεργή εγγραφή στο μάθημα του τμήματος. Η ίδια παρουσία την ίδια μέρα δεν μετριέται δεύτερη φορά.
+
+Σε πακέτο συνεδριών αφαιρείται μία συνεδρία από την ενεργή συνδρομή που λήγει νωρίτερα. Όταν το υπόλοιπο φτάσει στο μηδέν, η συνδρομή γίνεται εξαντλημένη. Πακέτο χωρίς αριθμό συνεδριών δεν μειώνεται. Σημείωση, τίτλος τεστ ή βαθμός δημιουργούν εγγραφή προόδου. Ο βαθμός φυλάσσεται ως κείμενο, για παράδειγμα `9/10` ή `Άριστα`.
+
+### Προτάσεις ευελιξίας
+
+Η σάρωση κοιτάζει το παράθυρο 09:00–21:00. Ημέρα χωρίς μαθήματα αγνοείται. Κενό από 120 λεπτά και πάνω γίνεται πρόταση προς τον ιδιοκτήτη, τη γραμματεία και τους καθηγητές εκείνης της ημέρας. Το ίδιο αδιάβαστο κείμενο δεν ξανακαταχωρίζεται. Η πρόταση μπορεί να μείνει αδιάβαστη, να γίνει αποδεκτή ή να απορριφθεί.
+
+### Οικονομικά
+
+Το αποτέλεσμα ενός μήνα είναι:
+
+`πληρωμές με paid_at μέσα στον μήνα − έξοδα της ημερομηνίας − μισθοδοσία του μήνα που έχει ήδη πληρωθεί`
+
+Η εκκρεμής μισθοδοσία φαίνεται, αλλά δεν μπαίνει στο καθαρό αποτέλεσμα. Κατηγορίες εξόδων: ενοίκιο, λογαριασμοί, μισθοδοσία, αναλώσιμα, άλλο. Τύποι μισθού: μηνιαίος, ωρομίσθιο, ποσοστό ανά μαθητή.
+
+Ο καθηγητής βλέπει, για τους μαθητές των δικών του τμημάτων, σύνολα πληρωμένων, εκκρεμών και ληξιπρόθεσμων χρεώσεων. Δεν βλέπει το σύνολο της σχολής.
+
+## Δοκιμές και στυλ
+
+```bash
+php artisan test
+composer test
+vendor/bin/pint
+```
+
+Το `composer test` καθαρίζει πρώτα την cached ρυθμισμένη τιμή και μετά τρέχει το PHPUnit. Τα feature tests καλύπτουν το δημόσιο πρόγραμμα, τους ρόλους, τη σύνδεση, τα οικονομικά, τις παρουσίες, τις προτάσεις κενού, τη γλώσσα και τη δημιουργία του admin από το migration.
+
+## Δομή
+
+```text
+app/Http/Controllers   σελίδες και φόρμες
+app/Services           παρουσίες, συνδρομές, κενά, οικονομικά
+app/Enums              ρόλοι και καταστάσεις
+lang/el, lang/en       κείμενα διεπαφής
+resources/js/pages     σελίδες Vue
+resources/js/Components  μπάρα, πρόγραμμα εβδομάδας
+database/migrations    σχήμα και admin
+database/seeders       δοκιμαστικά δεδομένα
+tests/Feature          έλεγχοι ροών
+```
