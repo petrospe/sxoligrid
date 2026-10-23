@@ -28,6 +28,7 @@ final class DatabaseSnapshot
         'jobs',
         'job_batches',
         'failed_jobs',
+        'billing_policies',
         'courses',
         'packages',
         'expenses',

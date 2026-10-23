@@ -24,23 +24,36 @@ class CourseBillingTest extends TestCase
             ->post(route('admin.courses.store'), [
                 'title' => 'Salsa',
                 'description' => 'Ομαδικό',
-                'price' => 15,
                 'type' => 'group',
-                'billing_methods' => ['drop_in', 'monthly'],
+                'billing_methods' => ['drop_in', 'monthly', 'semester'],
+                'prices' => [
+                    'drop_in' => 12,
+                    'monthly' => 40,
+                    'semester' => 150,
+                    'quarterly' => 999,
+                ],
             ])
             ->assertRedirect(route('admin.courses.index'));
 
         $course = Course::query()->first();
         $this->assertNotNull($course);
         $this->assertSame('group', $course->type->value);
-        $this->assertSame(['monthly', 'drop_in'], $course->billing_methods);
+        $this->assertSame(['monthly', 'semester', 'drop_in'], $course->billing_methods);
+        $this->assertEquals(40, $course->priceFor('monthly'));
+        $this->assertEquals(150, $course->priceFor('semester'));
+        $this->assertEquals(12, $course->priceFor('drop_in'));
+        $this->assertNull($course->priceFor('quarterly'));
+        $this->assertEquals(40, $course->price);
 
         $this->actingAs($admin)
             ->get(route('admin.courses.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('courses.0.billing_methods', ['monthly', 'drop_in'])
-                ->where('billing_methods', ['monthly', 'quarterly', 'offer_package', 'drop_in'])
+                ->where('courses.0.billing_methods', ['monthly', 'semester', 'drop_in'])
+                ->where('courses.0.prices.monthly', 40)
+                ->where('courses.0.prices.drop_in', 12)
+                ->where('courses.0.prices.semester', 150)
+                ->where('billing_methods', ['monthly', 'quarterly', 'semester', 'offer_package', 'drop_in'])
                 ->where('types', ['group', 'private'])
                 ->etc()
             );
@@ -54,9 +67,9 @@ class CourseBillingTest extends TestCase
             ->post(route('admin.courses.store'), [
                 'title' => 'Salsa',
                 'description' => null,
-                'price' => 15,
                 'type' => 'drop_in',
                 'billing_methods' => ['drop_in'],
+                'prices' => ['drop_in' => 15],
             ])
             ->assertSessionHasErrors('type');
 
@@ -71,9 +84,9 @@ class CourseBillingTest extends TestCase
             ->post(route('admin.courses.store'), [
                 'title' => 'Salsa',
                 'description' => null,
-                'price' => 15,
                 'type' => 'group',
                 'billing_methods' => [],
+                'prices' => [],
             ])
             ->assertSessionHasErrors('billing_methods');
     }
@@ -96,12 +109,37 @@ class CourseBillingTest extends TestCase
             'sessions_count' => null,
         ]);
 
+        $semester = Package::query()->create([
+            'title' => 'Εξάμηνο',
+            'price' => 300,
+            'duration_days' => 180,
+            'sessions_count' => null,
+        ]);
+
         $assigner->assign($student, $sessions, '2026-10-01', PaymentStatus::Paid);
         $assigner->assign($student, $quarter, '2026-10-01', PaymentStatus::Paid);
+        $assigner->assign($student, $semester, '2026-10-01', PaymentStatus::Paid);
 
         $this->assertSame(
-            ['offer_package', 'quarterly'],
+            ['offer_package', 'quarterly', 'semester'],
             Payment::query()->orderBy('id')->pluck('type')->map(fn ($type) => $type->value)->all(),
         );
+    }
+
+    public function test_a_selected_billing_method_needs_its_own_price(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.courses.store'), [
+                'title' => 'Salsa',
+                'description' => null,
+                'type' => 'group',
+                'billing_methods' => ['monthly', 'drop_in'],
+                'prices' => ['monthly' => 40],
+            ])
+            ->assertSessionHasErrors('prices.drop_in');
+
+        $this->assertSame(0, Course::query()->count());
     }
 }

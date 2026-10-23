@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\BillingMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use Illuminate\Database\QueryException;
@@ -14,8 +15,33 @@ class PackageController extends Controller
 {
     public function index(): Response
     {
+        $packages = Package::query()->with('course:id,title,billing_methods')->orderBy('title')->get();
+        $order = array_flip(BillingMethod::values());
+
+        $coursePackages = $packages
+            ->filter(function (Package $package): bool {
+                if ($package->course_id === null || ! $package->billing_method instanceof BillingMethod || $package->course === null) {
+                    return false;
+                }
+
+                return in_array($package->billing_method->value, $package->course->billing_methods ?? [], true);
+            })
+            ->sortBy(fn (Package $package): array => [
+                mb_strtolower($package->course->title),
+                $order[$package->billing_method->value] ?? 99,
+            ])
+            ->values()
+            ->map(fn (Package $package): array => $this->present($package))
+            ->all();
+
+        $customPackages = $packages
+            ->filter(fn (Package $package): bool => $package->course_id === null)
+            ->map(fn (Package $package): array => $this->present($package))
+            ->all();
+
         return Inertia::render('Admin/Packages/Index', [
-            'packages' => Package::query()->orderBy('title')->get()->map(fn (Package $package): array => $this->present($package))->all(),
+            'course_packages' => $coursePackages,
+            'packages' => $customPackages,
         ]);
     }
 
@@ -83,6 +109,9 @@ class PackageController extends Controller
         return [
             'id' => $package->id,
             'title' => $package->title,
+            'course_id' => $package->course_id,
+            'course' => $package->course?->title,
+            'billing_method' => $package->billing_method?->value,
             'price' => (float) $package->price,
             'duration_days' => $package->duration_days,
             'sessions_count' => $package->sessions_count,

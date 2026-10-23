@@ -22,6 +22,14 @@ const form = useForm({
 function submit() {
     form.post('/admin/subscriptions', { onSuccess: () => form.reset('student_id', 'package_id') })
 }
+
+function packageLabel(item) {
+    if (item.billing_method) {
+        return `${item.course || item.title} · ${t('billing_methods.' + item.billing_method)} · ${money(item.price)}`
+    }
+
+    return `${item.title} · ${money(item.price)}`
+}
 </script>
 
 <template>
@@ -39,7 +47,7 @@ function submit() {
             <label class="text-sm">{{ t('fields.package') }}
                 <select v-model="form.package_id" class="field mt-1" required>
                     <option value="" disabled>{{ t('common.choose') }}</option>
-                    <option v-for="item in packages" :key="item.id" :value="item.id">{{ item.title }} · {{ money(item.price) }}</option>
+                    <option v-for="item in packages" :key="item.id" :value="item.id">{{ packageLabel(item) }}</option>
                 </select>
             </label>
             <label class="text-sm">{{ t('fields.starts') }}<input v-model="form.starts_at" class="field mt-1" type="date" required></label>

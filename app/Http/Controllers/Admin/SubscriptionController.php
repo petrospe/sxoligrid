@@ -39,7 +39,13 @@ class SubscriptionController extends Controller
         return Inertia::render('Admin/Subscriptions/Index', [
             'subscriptions' => $subscriptions,
             'students' => Directory::options(UserRole::Student),
-            'packages' => Package::query()->orderBy('title')->get(['id', 'title', 'price']),
+            'packages' => Package::query()->with('course:id,title')->orderBy('title')->get()->map(fn (Package $package): array => [
+                'id' => $package->id,
+                'title' => $package->title,
+                'price' => (float) $package->price,
+                'billing_method' => $package->billing_method?->value,
+                'course' => $package->course?->title,
+            ])->all(),
             'paymentStatuses' => [PaymentStatus::Paid->value, PaymentStatus::Pending->value],
         ]);
     }

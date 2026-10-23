@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\TuitionQuote;
 use App\Support\Directory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
-    public function index(): Response
+    public function index(TuitionQuote $quotes): Response
     {
         $payments = Payment::query()
             ->with(['student:id,name', 'course:id,title'])
@@ -41,7 +42,12 @@ class PaymentController extends Controller
         return Inertia::render('Admin/Payments/Index', [
             'payments' => $payments,
             'students' => Directory::options(UserRole::Student),
-            'courses' => Course::query()->orderBy('title')->get(['id', 'title']),
+            'courses' => Course::query()->orderBy('title')->get()->map(fn (Course $course): array => [
+                'id' => $course->id,
+                'title' => $course->title,
+                'prices' => $course->pricesForMethods(),
+            ])->all(),
+            'quotes' => $quotes->summaries(),
             'types' => PaymentType::values(),
             'statuses' => PaymentStatus::values(),
         ]);

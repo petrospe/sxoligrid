@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BillingPolicy;
 use App\Models\ClassSchedule;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -43,6 +44,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Μαθηματικά Λυκείου',
             'description' => 'Τμήμα προετοιμασίας για πανελλαδικές.',
             'price' => 120,
+            'prices' => ['monthly' => 120],
             'type' => 'group',
             'billing_methods' => ['monthly'],
         ]);
@@ -50,13 +52,15 @@ class DatabaseSeeder extends Seeder
             'title' => 'English B2',
             'description' => 'Προετοιμασία για Lower.',
             'price' => 70,
+            'prices' => ['monthly' => 70, 'quarterly' => 190, 'semester' => 360],
             'type' => 'group',
-            'billing_methods' => ['monthly', 'quarterly'],
+            'billing_methods' => ['monthly', 'quarterly', 'semester'],
         ]);
         $salsa = Course::query()->create([
             'title' => 'Salsa',
             'description' => 'Ομαδικό τμήμα αρχαρίων και μέσων.',
             'price' => 50,
+            'prices' => ['monthly' => 50, 'drop_in' => 12],
             'type' => 'group',
             'billing_methods' => ['monthly', 'drop_in'],
         ]);
@@ -64,6 +68,7 @@ class DatabaseSeeder extends Seeder
             'title' => 'Πιάνο',
             'description' => 'Ατομικό μάθημα μουσικής.',
             'price' => 40,
+            'prices' => ['drop_in' => 40],
             'type' => 'private',
             'billing_methods' => ['drop_in'],
         ]);
@@ -109,10 +114,20 @@ class DatabaseSeeder extends Seeder
             'room' => 'Α2',
         ]);
 
-        Enrollment::query()->create(['student_id' => $giannis->id, 'course_id' => $math->id, 'status' => 'active']);
-        Enrollment::query()->create(['student_id' => $giannis->id, 'course_id' => $english->id, 'status' => 'active']);
-        Enrollment::query()->create(['student_id' => $anna->id, 'course_id' => $salsa->id, 'status' => 'active']);
-        Enrollment::query()->create(['student_id' => $anna->id, 'course_id' => $piano->id, 'status' => 'active']);
+        Enrollment::query()->create(['student_id' => $giannis->id, 'course_id' => $math->id, 'status' => 'active', 'billing_method' => 'monthly']);
+        Enrollment::query()->create(['student_id' => $giannis->id, 'course_id' => $english->id, 'status' => 'active', 'billing_method' => 'monthly']);
+        Enrollment::query()->create(['student_id' => $anna->id, 'course_id' => $salsa->id, 'status' => 'active', 'billing_method' => 'monthly']);
+        Enrollment::query()->create(['student_id' => $anna->id, 'course_id' => $piano->id, 'status' => 'active', 'billing_method' => 'drop_in']);
+
+        $policy = BillingPolicy::current();
+        if ($policy->tiers() === []) {
+            $policy->update([
+                'multi_course_discounts' => [
+                    ['min_courses' => 2, 'percent' => 10],
+                    ['min_courses' => 3, 'percent' => 15],
+                ],
+            ]);
+        }
 
         $unlimited = Package::query()->create([
             'title' => 'Μηνιαίο Unlimited Χορού',

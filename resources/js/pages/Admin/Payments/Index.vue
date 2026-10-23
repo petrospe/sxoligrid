@@ -1,17 +1,27 @@
 <script setup>
+import { computed, watch } from 'vue'
 import { Head, router, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
 import { useI18n } from '@/i18n'
 
 const { t, money } = useI18n()
 
-defineProps({
+const props = defineProps({
     payments: { type: Array, required: true },
     students: { type: Array, required: true },
     courses: { type: Array, required: true },
     types: { type: Array, required: true },
     statuses: { type: Array, required: true },
+    quotes: { type: Array, required: true },
 })
+
+const billingByPayment = {
+    monthly_subscription: 'monthly',
+    quarterly: 'quarterly',
+    semester: 'semester',
+    offer_package: 'offer_package',
+    drop_in_ticket: 'drop_in',
+}
 
 const form = useForm({
     student_id: '',
@@ -20,6 +30,40 @@ const form = useForm({
     type: 'monthly_subscription',
     status: 'pending',
     due_date: new Date().toISOString().slice(0, 10),
+})
+
+const suggestion = computed(() => {
+    const course = props.courses.find((item) => String(item.id) === String(form.course_id))
+    const method = billingByPayment[form.type]
+
+    if (!course || !method || course.prices?.[method] === undefined || course.prices?.[method] === null) {
+        return null
+    }
+
+    const list = Number(course.prices[method])
+
+    if (method !== 'monthly') {
+        return { list, amount: list, percent: 0 }
+    }
+
+    const quote = props.quotes.find((item) => String(item.student_id) === String(form.student_id))
+    const line = quote?.lines.find((item) => String(item.course_id) === String(course.id) && item.billing_method === 'monthly')
+
+    if (line) {
+        return {
+            list: Number(line.list_price),
+            amount: Number(line.amount),
+            percent: line.discounted ? Number(quote.percent) : 0,
+        }
+    }
+
+    return { list, amount: list, percent: 0 }
+})
+
+watch(suggestion, (value) => {
+    if (value) {
+        form.amount = value.amount
+    }
 })
 
 function submit() {
@@ -48,7 +92,12 @@ function changeStatus(payment, status) {
                     <option v-for="course in courses" :key="course.id" :value="course.id">{{ course.title }}</option>
                 </select>
             </label>
-            <label class="text-sm">{{ t('fields.amount') }}<input v-model="form.amount" class="field mt-1" type="number" min="0" step="0.01" required></label>
+            <label class="text-sm">{{ t('fields.amount') }}
+                <input v-model="form.amount" class="field mt-1" type="number" min="0" step="0.01" required>
+                <span v-if="suggestion && suggestion.percent > 0" class="mt-1 block text-[#44546F]">
+                    {{ t('admin.suggested_price', { list: money(suggestion.list), percent: suggestion.percent, amount: money(suggestion.amount) }) }}
+                </span>
+            </label>
             <label class="text-sm">{{ t('fields.type') }}
                 <select v-model="form.type" class="field mt-1">
                     <option v-for="type in types" :key="type" :value="type">{{ t('payment_types.' + type) }}</option>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BillingDiscountController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController;
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
         Route::put('courses/{course}', [CourseController::class, 'update'])->name('courses.update');
         Route::delete('courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+        Route::put('billing-discounts', [BillingDiscountController::class, 'update'])->name('billing-discounts.update');
 
         Route::get('schedules', [ScheduleController::class, 'index'])->name('schedules.index');
         Route::post('schedules', [ScheduleController::class, 'store'])->name('schedules.store');
