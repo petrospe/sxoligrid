@@ -43,6 +43,7 @@ const columns = computed(() => dayValues.map((value) => ({
             >
                 <p class="text-xs font-medium text-[#0C66E4]">{{ item.start_time }}–{{ item.end_time }}</p>
                 <h3 class="mt-1 text-sm font-semibold">{{ item.course.title }}</h3>
+                <p v-if="item.section?.name" class="text-xs text-[#44546F]">{{ item.section.name }}</p>
                 <p class="text-xs text-[#44546F]">{{ t('course_types.' + item.course.type) }} · {{ item.room }}</p>
                 <p v-if="showTeacher" class="mt-1 text-sm">{{ teacherNames(item) }}</p>
             </article>

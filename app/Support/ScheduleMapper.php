@@ -26,6 +26,9 @@ final class ScheduleMapper
                 'title' => $schedule->course->title,
                 'type' => $schedule->course->type->value,
             ],
+            'section' => [
+                'name' => $schedule->section?->name,
+            ],
         ])->values()->all();
     }
 
@@ -39,6 +42,7 @@ final class ScheduleMapper
             $teachers = self::teachers($schedule);
             $row = self::publicList(collect([$schedule]))[0];
             $row['course_id'] = $schedule->course_id;
+            $row['section_id'] = $schedule->section_id;
             $row['teacher_id'] = $teachers[0]['id'] ?? $schedule->teacher_id;
             $row['teacher_ids'] = array_column($teachers, 'id');
             $row['teacher'] = $teachers[0] ?? null;

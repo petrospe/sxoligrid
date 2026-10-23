@@ -11,80 +11,92 @@ use App\Models\EventParticipant;
 use App\Models\Expense;
 use App\Models\FlexSuggestion;
 use App\Models\LessonLog;
-use App\Models\Package;
 use App\Models\Payment;
 use App\Models\PrivateLesson;
 use App\Models\StudentSubscription;
 use App\Models\TeacherPayroll;
 use App\Models\User;
+use Database\Seeders\ConservatorySeeder;
+use Database\Seeders\DanceSchoolSeeder;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\FitnessStudioSeeder;
+use Database\Seeders\TutoringSchoolSeeder;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class DemoData
 {
-    /** @var list<string> */
-    private const USER_EMAILS = [
-        'owner@sxoligrid.test',
-        'teacher@sxoligrid.test',
-        'teacher2@sxoligrid.test',
-        'student@sxoligrid.test',
-        'student2@sxoligrid.test',
+    /** @var array<string, class-string<Seeder>> */
+    private const EXAMPLES = [
+        'general' => DatabaseSeeder::class,
+        'dance' => DanceSchoolSeeder::class,
+        'fitness' => FitnessStudioSeeder::class,
+        'conservatory' => ConservatorySeeder::class,
+        'tutoring' => TutoringSchoolSeeder::class,
     ];
 
-    /** @var list<string> */
-    private const COURSE_TITLES = [
-        'Μαθηματικά Λυκείου',
-        'English B2',
-        'Salsa',
-        'Πιάνο',
-    ];
-
-    /** @var list<string> */
-    private const PACKAGE_TITLES = [
-        'Μηνιαίο Unlimited Χορού',
-        'Πακέτο 10 Μαθημάτων Μουσικής',
-        'Drop-in εισιτήριο',
-        'Μηνιαία φροντιστηρίου',
-    ];
-
-    /** @var list<string> */
-    private const EXPENSE_TITLES = [
-        'Ενοίκιο Οκτωβρίου',
-        'Αναλώσιμα στούντιο',
-    ];
-
-    private const EVENT_TITLE = 'Χριστουγεννιάτικο Showcase';
-
-    private const FLEX_CONTENT = 'Κενό 1 ώρας την Τρίτη (17:00–18:00). Προτείνεται μετακίνηση τμήματος Salsa.';
-
-    public function installed(): bool
+    /**
+     * @return list<string>
+     */
+    public function keys(): array
     {
-        return User::query()->whereIn('email', self::USER_EMAILS)->exists()
-            || Course::query()->whereIn('title', self::COURSE_TITLES)->exists()
-            || Package::query()->whereIn('title', self::PACKAGE_TITLES)->exists()
-            || Event::query()->where('title', self::EVENT_TITLE)->exists()
-            || Expense::query()->whereIn('title', self::EXPENSE_TITLES)->exists();
+        return array_keys(self::EXAMPLES);
     }
 
-    public function install(): void
+    /**
+     * @return list<array{key: string, installed: bool}>
+     */
+    public function examples(): array
     {
-        if ($this->installed()) {
+        $examples = [];
+
+        foreach ($this->keys() as $key) {
+            $examples[] = [
+                'key' => $key,
+                'installed' => $this->installed($key),
+            ];
+        }
+
+        return $examples;
+    }
+
+    public function installed(string $key = 'general'): bool
+    {
+        $markers = $this->markers($key);
+
+        return User::query()->whereIn('email', $markers['emails'])->exists()
+            || Course::query()->whereIn('title', $markers['courses'])->exists()
+            || ($markers['subscriptions'] !== [] && StudentSubscription::query()->whereIn('title', $markers['subscriptions'])->exists())
+            || ($markers['events'] !== [] && Event::query()->whereIn('title', $markers['events'])->exists())
+            || ($markers['expenses'] !== [] && Expense::query()->whereIn('title', $markers['expenses'])->exists());
+    }
+
+    public function install(string $key = 'general'): void
+    {
+        if ($this->installed($key)) {
             throw ValidationException::withMessages([
                 'demo' => __('ui.errors.demo_exists'),
             ]);
         }
 
-        (new DatabaseSeeder)->run();
+        $class = self::EXAMPLES[$key];
+        (new $class)->run();
     }
 
-    public function remove(): void
+    public function remove(string $key = 'general'): void
     {
-        DB::transaction(function (): void {
-            $userIds = User::query()->whereIn('email', self::USER_EMAILS)->pluck('id')->all();
-            $courseIds = Course::query()->whereIn('title', self::COURSE_TITLES)->pluck('id')->all();
-            $packageIds = Package::query()->whereIn('title', self::PACKAGE_TITLES)->pluck('id')->all();
-            $eventIds = Event::query()->where('title', self::EVENT_TITLE)->pluck('id')->all();
+        $markers = $this->markers($key);
+
+        DB::transaction(function () use ($markers): void {
+            $userIds = User::query()->whereIn('email', $markers['emails'])->pluck('id')->all();
+            $courseIds = Course::query()->whereIn('title', $markers['courses'])->pluck('id')->all();
+            $subscriptionIds = $markers['subscriptions'] === []
+                ? []
+                : StudentSubscription::query()->whereIn('title', $markers['subscriptions'])->pluck('id')->all();
+            $eventIds = $markers['events'] === []
+                ? []
+                : Event::query()->whereIn('title', $markers['events'])->pluck('id')->all();
             $scheduleIds = ClassSchedule::query()->whereIn('course_id', $courseIds)->pluck('id')->all();
             $lessonIds = PrivateLesson::query()
                 ->where(function ($query) use ($userIds): void {
@@ -112,12 +124,16 @@ final class DemoData
                 })
                 ->delete();
             TeacherPayroll::query()->whereIn('teacher_id', $userIds)->delete();
-            StudentSubscription::query()
-                ->where(function ($query) use ($userIds, $packageIds): void {
-                    $query->whereIn('student_id', $userIds)->orWhereIn('package_id', $packageIds);
+            Payment::query()
+                ->where(function ($query) use ($userIds, $subscriptionIds): void {
+                    $query->whereIn('student_id', $userIds)->orWhereIn('subscription_id', $subscriptionIds);
                 })
                 ->delete();
-            Payment::query()->whereIn('student_id', $userIds)->delete();
+            StudentSubscription::query()
+                ->where(function ($query) use ($userIds, $subscriptionIds): void {
+                    $query->whereIn('student_id', $userIds)->orWhereIn('id', $subscriptionIds);
+                })
+                ->delete();
             PrivateLesson::query()->whereIn('id', $lessonIds)->delete();
             Enrollment::query()
                 ->where(function ($query) use ($userIds, $courseIds): void {
@@ -125,16 +141,42 @@ final class DemoData
                 })
                 ->delete();
             FlexSuggestion::query()
-                ->where(function ($query) use ($userIds): void {
-                    $query->whereIn('target_user_id', $userIds)->orWhere('content', self::FLEX_CONTENT);
+                ->where(function ($query) use ($userIds, $markers): void {
+                    $query->whereIn('target_user_id', $userIds);
+
+                    if ($markers['flex'] !== []) {
+                        $query->orWhereIn('content', $markers['flex']);
+                    }
                 })
                 ->delete();
             ClassSchedule::query()->whereIn('id', $scheduleIds)->delete();
-            Event::query()->whereIn('id', $eventIds)->delete();
+            if ($eventIds !== []) {
+                Event::query()->whereIn('id', $eventIds)->delete();
+            }
             Course::query()->whereIn('id', $courseIds)->delete();
-            Package::query()->whereIn('id', $packageIds)->delete();
-            Expense::query()->whereIn('title', self::EXPENSE_TITLES)->delete();
-            User::query()->whereIn('email', self::USER_EMAILS)->delete();
+            if ($markers['expenses'] !== []) {
+                Expense::query()->whereIn('title', $markers['expenses'])->delete();
+            }
+            User::query()->whereIn('email', $markers['emails'])->delete();
         });
+    }
+
+    /**
+     * @return array{emails: list<string>, courses: list<string>, subscriptions: list<string>, expenses: list<string>, events: list<string>, flex: list<string>}
+     */
+    private function markers(string $key): array
+    {
+        $class = self::EXAMPLES[$key] ?? null;
+
+        if ($class === null || ! method_exists($class, 'markers')) {
+            throw ValidationException::withMessages([
+                'example' => __('ui.errors.demo_example'),
+            ]);
+        }
+
+        /** @var array{emails: list<string>, courses: list<string>, subscriptions: list<string>, expenses: list<string>, events: list<string>, flex: list<string>} $markers */
+        $markers = $class::markers();
+
+        return $markers;
     }
 }

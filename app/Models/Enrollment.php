@@ -2,15 +2,35 @@
 
 namespace App\Models;
 
-use App\Enums\BillingMethod;
 use App\Enums\EnrollmentStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['student_id', 'course_id', 'status', 'billing_method'])]
+#[Fillable(['student_id', 'course_id', 'section_id', 'status'])]
 class Enrollment extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function (Enrollment $enrollment): void {
+            if ($enrollment->section_id !== null) {
+                $section = CourseSection::query()->find($enrollment->section_id);
+
+                if ($section instanceof CourseSection) {
+                    $enrollment->course_id = $section->course_id;
+                }
+
+                return;
+            }
+
+            $course = $enrollment->course_id === null ? null : Course::query()->find($enrollment->course_id);
+
+            if ($course instanceof Course) {
+                $enrollment->section_id = $course->defaultSection()->id;
+            }
+        });
+    }
+
     /**
      * @return array<string, string>
      */
@@ -18,7 +38,6 @@ class Enrollment extends Model
     {
         return [
             'status' => EnrollmentStatus::class,
-            'billing_method' => BillingMethod::class,
         ];
     }
 
@@ -30,5 +49,10 @@ class Enrollment extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(CourseSection::class, 'section_id');
     }
 }

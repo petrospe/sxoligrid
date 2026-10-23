@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n'
 
 const props = defineProps({
     demo_installed: { type: Boolean, required: true },
+    examples: { type: Array, required: true },
     landing: { type: Object, required: true },
 })
 
@@ -12,7 +13,9 @@ const { t } = useI18n()
 const restore = useForm({
     backup: null,
 })
-const demo = useForm({})
+const demo = useForm({
+    example: 'general',
+})
 const landingForm = useForm({
     el: { ...props.landing.el },
     en: { ...props.landing.en },
@@ -54,19 +57,21 @@ function submitRestore() {
     restore.post('/admin/settings/restore', { forceFormData: true })
 }
 
-function installDemo() {
+function installDemo(key) {
     if (!window.confirm(t('confirm.install_demo'))) {
         return
     }
 
+    demo.example = key
     demo.post('/admin/settings/demo')
 }
 
-function removeDemo() {
+function removeDemo(key) {
     if (!window.confirm(t('confirm.remove_demo'))) {
         return
     }
 
+    demo.example = key
     demo.delete('/admin/settings/demo')
 }
 </script>
@@ -133,11 +138,18 @@ function removeDemo() {
         <section class="card mt-4">
             <h2 class="font-semibold">{{ t('settings.demo_title') }}</h2>
             <p class="mt-1 text-sm text-[#44546F]">{{ t('settings.demo_hint') }}</p>
-            <p v-if="demo_installed" class="mt-2 text-sm text-[#626F86]">{{ t('settings.demo_present') }}</p>
             <p v-if="demo.errors.demo" class="error">{{ demo.errors.demo }}</p>
-            <div class="mt-4 flex flex-wrap gap-2">
-                <button class="btn" type="button" :disabled="demo.processing || demo_installed" @click="installDemo">{{ t('settings.demo_add') }}</button>
-                <button class="btn-danger" type="button" :disabled="demo.processing" @click="removeDemo">{{ t('settings.demo_remove') }}</button>
+            <p v-if="demo.errors.example" class="error">{{ demo.errors.example }}</p>
+            <div class="mt-4 space-y-4">
+                <article v-for="example in examples" :key="example.key" class="border-t border-[#DFE1E6] pt-4">
+                    <h3 class="font-medium">{{ t('demo_examples.' + example.key) }}</h3>
+                    <p class="mt-1 text-sm text-[#44546F]">{{ t('demo_examples.' + example.key + '_hint') }}</p>
+                    <p v-if="example.installed" class="mt-2 text-sm text-[#626F86]">{{ t('settings.demo_present') }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <button class="btn" type="button" :disabled="demo.processing || example.installed" @click="installDemo(example.key)">{{ t('settings.demo_add') }}</button>
+                        <button class="btn-danger" type="button" :disabled="demo.processing || !example.installed" @click="removeDemo(example.key)">{{ t('settings.demo_remove') }}</button>
+                    </div>
+                </article>
             </div>
         </section>
     </AppLayout>

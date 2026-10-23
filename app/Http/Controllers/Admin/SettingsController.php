@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,6 +22,7 @@ class SettingsController extends Controller
     {
         return Inertia::render('Admin/Settings', [
             'demo_installed' => $demo->installed(),
+            'examples' => $demo->examples(),
             'landing' => LandingProfile::current()->formState(),
         ]);
     }
@@ -124,17 +126,26 @@ class SettingsController extends Controller
         return redirect()->route('login')->with('success', __('ui.flash.database_restored'));
     }
 
-    public function installDemo(DemoData $demo): RedirectResponse
+    public function installDemo(Request $request, DemoData $demo): RedirectResponse
     {
-        $demo->install();
+        $demo->install($this->exampleKey($request, $demo));
 
         return redirect()->route('admin.settings.show')->with('success', __('ui.flash.demo_installed'));
     }
 
-    public function removeDemo(DemoData $demo): RedirectResponse
+    public function removeDemo(Request $request, DemoData $demo): RedirectResponse
     {
-        $demo->remove();
+        $demo->remove($this->exampleKey($request, $demo));
 
         return redirect()->route('admin.settings.show')->with('success', __('ui.flash.demo_removed'));
+    }
+
+    private function exampleKey(Request $request, DemoData $demo): string
+    {
+        $data = $request->validate([
+            'example' => ['sometimes', 'string', Rule::in($demo->keys())],
+        ]);
+
+        return $data['example'] ?? 'general';
     }
 }

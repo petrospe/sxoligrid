@@ -1,33 +1,23 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
-import CourseBillingFields from '@/Components/CourseBillingFields.vue'
-import { billingPayload, emptyPrices } from '@/billing'
 import { useI18n } from '@/i18n'
 
 const props = defineProps({
     course: { type: Object, required: true },
     types: { type: Array, required: true },
-    billing_methods: { type: Array, required: true },
 })
 
 const { t } = useI18n()
-const prices = emptyPrices(props.billing_methods)
-
-for (const [method, amount] of Object.entries(props.course.prices ?? {})) {
-    prices[method] = amount
-}
 
 const form = useForm({
     title: props.course.title,
     description: props.course.description ?? '',
     type: props.course.type,
-    billing_methods: props.course.billing_methods ?? ['monthly'],
-    prices,
 })
 
 function submit() {
-    form.transform(billingPayload).put(`/admin/courses/${props.course.id}`)
+    form.put(`/admin/courses/${props.course.id}`)
 }
 </script>
 
@@ -44,7 +34,6 @@ function submit() {
                     <option v-for="type in types" :key="type" :value="type">{{ t('course_types.' + type) }}</option>
                 </select>
             </label>
-            <CourseBillingFields :form="form" :methods="billing_methods" />
             <label class="text-sm">{{ t('fields.description') }}
                 <textarea v-model="form.description" class="field mt-1" rows="3"></textarea>
             </label>

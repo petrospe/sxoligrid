@@ -7,12 +7,12 @@ const { t } = useI18n()
 
 const props = defineProps({
     schedule: { type: Object, required: true },
-    courses: { type: Array, required: true },
+    sections: { type: Array, required: true },
     teachers: { type: Array, required: true },
 })
 
 const form = useForm({
-    course_id: props.schedule.course_id,
+    section_id: props.schedule.section_id,
     teacher_ids: props.schedule.teacher_ids ?? [],
     day_of_week: props.schedule.day_of_week,
     start_time: props.schedule.start_time,
@@ -31,9 +31,9 @@ function submit() {
     <AppLayout>
         <h1 class="text-xl font-semibold">{{ t('admin.edit_timetable') }}</h1>
         <form class="card mt-6 grid max-w-2xl gap-3" @submit.prevent="submit">
-            <label class="text-sm">{{ t('fields.course') }}
-                <select v-model="form.course_id" class="field mt-1">
-                    <option v-for="course in courses" :key="course.id" :value="course.id">{{ course.title }}</option>
+            <label class="text-sm">{{ t('fields.section') }}
+                <select v-model="form.section_id" class="field mt-1">
+                    <option v-for="section in sections" :key="section.id" :value="section.id">{{ section.label }}</option>
                 </select>
             </label>
             <fieldset class="text-sm">

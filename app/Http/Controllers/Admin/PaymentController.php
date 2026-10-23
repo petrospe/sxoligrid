@@ -8,8 +8,8 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Payment;
+use App\Models\StudentSubscription;
 use App\Models\User;
-use App\Services\TuitionQuote;
 use App\Support\Directory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,10 +20,10 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
-    public function index(TuitionQuote $quotes): Response
+    public function index(): Response
     {
         $payments = Payment::query()
-            ->with(['student:id,name', 'course:id,title'])
+            ->with(['student:id,name', 'course:id,title', 'subscription:id,title'])
             ->orderByDesc('due_date')
             ->orderByDesc('id')
             ->get()
@@ -31,6 +31,7 @@ class PaymentController extends Controller
                 'id' => $payment->id,
                 'student' => $payment->student->name,
                 'course' => $payment->course?->title,
+                'subscription' => $payment->subscription?->title,
                 'amount' => (float) $payment->amount,
                 'type' => $payment->type->value,
                 'status' => $payment->status->value,
@@ -39,15 +40,24 @@ class PaymentController extends Controller
             ])
             ->all();
 
+        $subscriptions = StudentSubscription::query()
+            ->with('course:id,title')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (StudentSubscription $subscription): array => [
+                'id' => $subscription->id,
+                'student_id' => $subscription->student_id,
+                'course_id' => $subscription->course_id,
+                'title' => $subscription->title,
+                'course' => $subscription->course?->title,
+            ])
+            ->all();
+
         return Inertia::render('Admin/Payments/Index', [
             'payments' => $payments,
             'students' => Directory::options(UserRole::Student),
-            'courses' => Course::query()->orderBy('title')->get()->map(fn (Course $course): array => [
-                'id' => $course->id,
-                'title' => $course->title,
-                'prices' => $course->pricesForMethods(),
-            ])->all(),
-            'quotes' => $quotes->summaries(),
+            'courses' => Course::query()->orderBy('title')->get(['id', 'title'])->all(),
+            'subscriptions' => $subscriptions,
             'types' => PaymentType::values(),
             'statuses' => PaymentStatus::values(),
         ]);
@@ -55,10 +65,6 @@ class PaymentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        if ($request->input('course_id') === '') {
-            $request->merge(['course_id' => null]);
-        }
-
         $data = $this->validated($request);
         $data['paid_at'] = $data['status'] === PaymentStatus::Paid->value ? now() : null;
 
@@ -85,8 +91,15 @@ class PaymentController extends Controller
      */
     private function validated(Request $request): array
     {
+        foreach (['course_id', 'subscription_id'] as $field) {
+            if ($request->input($field) === '') {
+                $request->merge([$field => null]);
+            }
+        }
+
         $data = $request->validate([
             'student_id' => ['required', 'integer', 'exists:users,id'],
+            'subscription_id' => ['nullable', 'integer', 'exists:student_subscriptions,id'],
             'course_id' => ['nullable', 'integer', 'exists:courses,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'type' => ['required', Rule::in(PaymentType::values())],
@@ -100,6 +113,33 @@ class PaymentController extends Controller
             throw ValidationException::withMessages([
                 'student_id' => __('ui.errors.choose_student'),
             ]);
+        }
+
+        $data['course_id'] = $data['course_id'] ?? null;
+        $data['subscription_id'] = $data['subscription_id'] ?? null;
+
+        if ($data['type'] === PaymentType::DropIn->value) {
+            $data['subscription_id'] = null;
+
+            return $data;
+        }
+
+        if ($data['subscription_id'] === null) {
+            throw ValidationException::withMessages([
+                'subscription_id' => __('ui.errors.choose_subscription'),
+            ]);
+        }
+
+        $subscription = StudentSubscription::query()->find($data['subscription_id']);
+
+        if (! $subscription instanceof StudentSubscription || $subscription->student_id !== $student->id) {
+            throw ValidationException::withMessages([
+                'subscription_id' => __('ui.errors.subscription_mismatch'),
+            ]);
+        }
+
+        if ($data['course_id'] === null && $subscription->course_id !== null) {
+            $data['course_id'] = $subscription->course_id;
         }
 
         return $data;

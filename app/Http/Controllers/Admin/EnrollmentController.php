@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\BillingMethod;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\Course;
+use App\Models\CourseSection;
 use App\Models\Enrollment;
 use App\Models\User;
-use App\Services\TuitionQuote;
 use App\Support\Directory;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -21,17 +19,15 @@ use Inertia\Response;
 
 class EnrollmentController extends Controller
 {
-    public function index(TuitionQuote $quotes): Response
+    public function index(): Response
     {
         $enrollments = Enrollment::query()
-            ->with(['student:id,name', 'course'])
+            ->with(['student:id,name', 'course:id,title,type', 'section:id,name'])
             ->orderByDesc('id')
             ->get()
             ->map(fn (Enrollment $enrollment): array => [
                 'id' => $enrollment->id,
                 'status' => $enrollment->status->value,
-                'billing_method' => $enrollment->billing_method->value,
-                'list_price' => $enrollment->course->priceFor($enrollment->billing_method->value) ?? 0.0,
                 'student' => [
                     'id' => $enrollment->student->id,
                     'name' => $enrollment->student->name,
@@ -39,8 +35,11 @@ class EnrollmentController extends Controller
                 'course' => [
                     'id' => $enrollment->course->id,
                     'title' => $enrollment->course->title,
-                    'billing_methods' => array_values($enrollment->course->billing_methods ?? []),
-                    'prices' => $enrollment->course->pricesForMethods(),
+                    'type' => $enrollment->course->type->value,
+                ],
+                'section' => [
+                    'id' => $enrollment->section->id,
+                    'name' => $enrollment->section->name,
                 ],
             ])
             ->all();
@@ -48,14 +47,8 @@ class EnrollmentController extends Controller
         return Inertia::render('Admin/Enrollments/Index', [
             'enrollments' => $enrollments,
             'students' => Directory::options(UserRole::Student),
-            'courses' => Course::query()->orderBy('title')->get()->map(fn (Course $course): array => [
-                'id' => $course->id,
-                'title' => $course->title,
-                'billing_methods' => array_values($course->billing_methods ?? []),
-                'prices' => $course->pricesForMethods(),
-            ])->all(),
+            'sections' => $this->sections(),
             'statuses' => EnrollmentStatus::values(),
-            'quotes' => $quotes->summaries(),
         ]);
     }
 
@@ -63,13 +56,12 @@ class EnrollmentController extends Controller
     {
         $data = $request->validate([
             'student_id' => ['required', 'integer', 'exists:users,id'],
-            'course_id' => ['required', 'integer', 'exists:courses,id'],
+            'section_id' => ['required', 'integer', 'exists:course_sections,id'],
             'status' => ['required', Rule::in(EnrollmentStatus::values())],
-            'billing_method' => ['required', Rule::in(BillingMethod::values())],
         ]);
 
         $this->ensureStudent((int) $data['student_id']);
-        $this->ensureMethod((int) $data['course_id'], (string) $data['billing_method']);
+        $data['course_id'] = CourseSection::query()->findOrFail($data['section_id'])->course_id;
 
         try {
             Enrollment::query()->create($data);
@@ -85,17 +77,8 @@ class EnrollmentController extends Controller
     public function update(Request $request, Enrollment $enrollment): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['sometimes', 'required', Rule::in(EnrollmentStatus::values())],
-            'billing_method' => ['sometimes', 'required', Rule::in(BillingMethod::values())],
+            'status' => ['required', Rule::in(EnrollmentStatus::values())],
         ]);
-
-        if (isset($data['billing_method'])) {
-            $this->ensureMethod($enrollment->course_id, (string) $data['billing_method']);
-        }
-
-        if ($data === []) {
-            return back();
-        }
 
         $enrollment->update($data);
 
@@ -109,16 +92,23 @@ class EnrollmentController extends Controller
         return back()->with('success', __('ui.flash.enrollment_deleted'));
     }
 
-    private function ensureMethod(int $courseId, string $method): void
+    /**
+     * @return list<array{id: int, name: string, course: string, type: string}>
+     */
+    private function sections(): array
     {
-        $course = Course::query()->find($courseId);
-        $offered = $course?->billing_methods ?? [];
-
-        if (! in_array($method, $offered, true)) {
-            throw ValidationException::withMessages([
-                'billing_method' => __('ui.errors.billing_method_unavailable'),
-            ]);
-        }
+        return CourseSection::query()
+            ->with('course:id,title,type')
+            ->get()
+            ->sortBy(fn (CourseSection $section): string => $section->course->title.' '.$section->name, SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn (CourseSection $section): array => [
+                'id' => $section->id,
+                'name' => $section->name,
+                'course' => $section->course->title,
+                'type' => $section->course->type->value,
+            ])
+            ->values()
+            ->all();
     }
 
     private function ensureStudent(int $id): void

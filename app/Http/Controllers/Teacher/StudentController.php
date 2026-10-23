@@ -15,15 +15,16 @@ class StudentController extends Controller
 {
     public function index(Request $request): Response
     {
-        $courseIds = ClassSchedule::query()
+        $sectionIds = ClassSchedule::query()
             ->forTeacher($request->user()->id)
-            ->pluck('course_id')
+            ->pluck('section_id')
+            ->filter()
             ->unique()
             ->all();
 
         $students = User::query()
             ->where('role', UserRole::Student)
-            ->whereHas('enrollments', fn ($query) => $query->whereIn('course_id', $courseIds))
+            ->whereHas('enrollments', fn ($query) => $query->whereIn('section_id', $sectionIds))
             ->with('payments')
             ->orderBy('name')
             ->get()

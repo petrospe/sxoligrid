@@ -24,7 +24,7 @@ class LandingPageTest extends TestCase
                 ->where('landing.title', 'Σύστημα διαχείρισης σχολών και στούντιο')
                 ->where('landing.subtitle', 'Σχολές · στούντιο · φροντιστήρια')
                 ->where('landing.description', 'Δημόσια προβολή μαθημάτων, αιθουσών και ωρών. Τα ονόματα των καθηγητών δεν εμφανίζονται στο πρόγραμμα.')
-                ->where('landing.details', 'Μαθήματα σε τμήματα και ιδιαίτερα, με πληρωμή ανά μήνα, τρίμηνο, πακέτο ή συνεδρία, και ωράριο ανά ημέρα και αίθουσα.')
+                ->where('landing.details', 'Μαθήματα σε τμήματα και ιδιαίτερα, με ωράριο ανά ημέρα και αίθουσα. Η πληρωμή είναι συνδρομή μιας περιόδου ή μία φορά ανά μάθημα.')
                 ->where('landing.logo_url', asset('branding/logo.png'))
                 ->etc()
             );
@@ -36,7 +36,7 @@ class LandingPageTest extends TestCase
                 ->where('landing.title', 'Academy & Studio Management System')
                 ->where('landing.subtitle', 'Schools · studios · tutoring')
                 ->where('landing.description', 'Public view of courses, rooms, and times. Teacher names are not shown on the schedule.')
-                ->where('landing.details', 'Group and private classes, paid monthly, quarterly, by package, or per session, with a timetable by day and room.')
+                ->where('landing.details', 'Group and private classes, with a timetable by day and room. Payment is a subscription for a period, or once per class.')
                 ->etc()
             );
     }

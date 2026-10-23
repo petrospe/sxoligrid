@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ClassSchedule;
-use App\Models\Course;
+use App\Models\CourseSection;
 use App\Models\User;
 use App\Support\Directory;
 use App\Support\ScheduleMapper;
@@ -20,14 +20,14 @@ class ScheduleController extends Controller
     public function index(): Response
     {
         $schedules = ClassSchedule::query()
-            ->with(['course:id,title,type', 'teacher:id,name', 'teachers:id,name'])
+            ->with(['course:id,title,type', 'section:id,name', 'teacher:id,name', 'teachers:id,name'])
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get();
 
         return Inertia::render('Admin/Schedules/Index', [
             'schedules' => ScheduleMapper::withTeacher($schedules),
-            'courses' => $this->courses(),
+            'sections' => $this->sections(),
             'teachers' => Directory::options(UserRole::Teacher),
         ]);
     }
@@ -41,11 +41,11 @@ class ScheduleController extends Controller
 
     public function edit(ClassSchedule $schedule): Response
     {
-        $schedule->load(['course:id,title,type', 'teacher:id,name', 'teachers:id,name']);
+        $schedule->load(['course:id,title,type', 'section:id,name', 'teacher:id,name', 'teachers:id,name']);
 
         return Inertia::render('Admin/Schedules/Edit', [
             'schedule' => ScheduleMapper::withTeacher(collect([$schedule]))[0],
-            'courses' => $this->courses(),
+            'sections' => $this->sections(),
             'teachers' => Directory::options(UserRole::Teacher),
         ]);
     }
@@ -65,14 +65,20 @@ class ScheduleController extends Controller
     }
 
     /**
-     * @return list<array{id: int, title: string}>
+     * @return list<array{id: int, label: string}>
      */
-    private function courses(): array
+    private function sections(): array
     {
-        return Course::query()->orderBy('title')->get(['id', 'title'])->map(fn (Course $course): array => [
-            'id' => $course->id,
-            'title' => $course->title,
-        ])->all();
+        return CourseSection::query()
+            ->with('course:id,title')
+            ->get()
+            ->sortBy(fn (CourseSection $section): string => $section->course->title.' '.$section->name, SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn (CourseSection $section): array => [
+                'id' => $section->id,
+                'label' => $section->course->title.' · '.$section->name,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -81,7 +87,7 @@ class ScheduleController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
-            'course_id' => ['required', 'integer', 'exists:courses,id'],
+            'section_id' => ['required', 'integer', 'exists:course_sections,id'],
             'teacher_ids' => ['present', 'array'],
             'teacher_ids.*' => ['integer', 'distinct'],
             'day_of_week' => ['required', 'integer', 'between:1,7'],
@@ -123,6 +129,7 @@ class ScheduleController extends Controller
         $ids = $data['teacher_ids'];
         unset($data['teacher_ids']);
         $data['teacher_id'] = $ids[0] ?? null;
+        $data['course_id'] = CourseSection::query()->findOrFail($data['section_id'])->course_id;
         $schedule->fill($data);
         $schedule->save();
         $schedule->teachers()->sync($ids);

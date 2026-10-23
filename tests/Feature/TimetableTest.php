@@ -79,10 +79,11 @@ class TimetableTest extends TestCase
             'price' => 50,
             'type' => 'group',
         ]);
+        $section = $course->sections()->create(['name' => 'Τρίτη 18:00']);
 
         $this->actingAs($admin)
             ->post(route('admin.schedules.store'), [
-                'course_id' => $course->id,
+                'section_id' => $section->id,
                 'teacher_ids' => [$maria->id, $kostas->id],
                 'day_of_week' => 2,
                 'start_time' => '18:00',

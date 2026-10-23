@@ -11,12 +11,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'private_lesson_id',
     'student_id',
     'teacher_id',
+    'happened_on',
     'performance_notes',
     'test_title',
     'test_score',
 ])]
 class LessonLog extends Model
 {
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'happened_on' => 'date',
+        ];
+    }
+
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(ClassSchedule::class, 'schedule_id');

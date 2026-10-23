@@ -1,12 +1,11 @@
 <?php
 
-use App\Http\Controllers\Admin\BillingDiscountController;
 use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\CourseSectionController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\FlexSuggestionController as AdminFlexSuggestionController;
-use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PrivateLessonController as AdminPrivateLessonController;
 use App\Http\Controllers\Admin\ScheduleController;
@@ -32,7 +31,6 @@ use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\Expense;
 use App\Models\FlexSuggestion;
-use App\Models\Package;
 use App\Models\Payment;
 use App\Models\PrivateLesson;
 use App\Models\TeacherPayroll;
@@ -65,7 +63,8 @@ Route::middleware('auth')->group(function (): void {
         Route::get('courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
         Route::put('courses/{course}', [CourseController::class, 'update'])->name('courses.update');
         Route::delete('courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
-        Route::put('billing-discounts', [BillingDiscountController::class, 'update'])->name('billing-discounts.update');
+        Route::post('courses/{course}/sections', [CourseSectionController::class, 'store'])->name('courses.sections.store');
+        Route::delete('courses/{course}/sections/{section}', [CourseSectionController::class, 'destroy'])->name('courses.sections.destroy');
 
         Route::get('schedules', [ScheduleController::class, 'index'])->name('schedules.index');
         Route::post('schedules', [ScheduleController::class, 'store'])->name('schedules.store');
@@ -77,12 +76,6 @@ Route::middleware('auth')->group(function (): void {
         Route::post('enrollments', [EnrollmentController::class, 'store'])->name('enrollments.store');
         Route::patch('enrollments/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollments.update');
         Route::delete('enrollments/{enrollment}', [EnrollmentController::class, 'destroy'])->name('enrollments.destroy');
-
-        Route::get('packages', [PackageController::class, 'index'])->name('packages.index');
-        Route::post('packages', [PackageController::class, 'store'])->name('packages.store');
-        Route::get('packages/{package}/edit', [PackageController::class, 'edit'])->name('packages.edit');
-        Route::put('packages/{package}', [PackageController::class, 'update'])->name('packages.update');
-        Route::delete('packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
 
         Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
         Route::post('subscriptions', [SubscriptionController::class, 'store'])->name('subscriptions.store');
@@ -154,6 +147,5 @@ Route::bind('event', fn (string $value): Event => Event::query()->findOrFail($va
 Route::bind('participant', fn (string $value): EventParticipant => EventParticipant::query()->findOrFail($value));
 Route::bind('privateLesson', fn (string $value): PrivateLesson => PrivateLesson::query()->findOrFail($value));
 Route::bind('flexSuggestion', fn (string $value): FlexSuggestion => FlexSuggestion::query()->findOrFail($value));
-Route::bind('package', fn (string $value): Package => Package::query()->findOrFail($value));
 Route::bind('expense', fn (string $value): Expense => Expense::query()->findOrFail($value));
 Route::bind('payroll', fn (string $value): TeacherPayroll => TeacherPayroll::query()->findOrFail($value));

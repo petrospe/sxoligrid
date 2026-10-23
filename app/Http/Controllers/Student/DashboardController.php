@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Enums\PaymentStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
@@ -10,6 +12,7 @@ use App\Models\LessonLog;
 use App\Models\Payment;
 use App\Models\PrivateLesson;
 use App\Models\StudentSubscription;
+use App\Services\LessonCalendar;
 use App\Support\Directory;
 use App\Support\ScheduleMapper;
 use Illuminate\Http\Request;
@@ -18,13 +21,21 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, LessonCalendar $calendar): Response
     {
         $student = $request->user();
+        $history = $calendar->forStudent($student);
 
         $enrollments = Enrollment::query()
             ->where('student_id', $student->id)
-            ->with(['course.schedules.teacher'])
+            ->with([
+                'course:id,title,type',
+                'section:id,name',
+                'section.schedules.course:id,title,type',
+                'section.schedules.section:id,name',
+                'section.schedules.teacher:id,name',
+                'section.schedules.teachers:id,name',
+            ])
             ->get()
             ->map(fn (Enrollment $enrollment): array => [
                 'id' => $enrollment->id,
@@ -33,32 +44,43 @@ class DashboardController extends Controller
                     'title' => $enrollment->course->title,
                     'type' => $enrollment->course->type->value,
                 ],
-                'schedules' => ScheduleMapper::withTeacher($enrollment->course->schedules),
+                'section' => [
+                    'name' => $enrollment->section->name,
+                ],
+                'schedules' => ScheduleMapper::withTeacher($enrollment->section->schedules),
             ])
             ->all();
 
         $subscriptions = StudentSubscription::query()
             ->where('student_id', $student->id)
-            ->with('package:id,title')
+            ->with('course:id,title')
+            ->withSum(['payments as paid_amount' => function ($query): void {
+                $query->where('status', PaymentStatus::Paid);
+            }], 'amount')
             ->orderByDesc('starts_at')
             ->get()
             ->map(function (StudentSubscription $subscription): array {
                 $status = $subscription->status->value;
 
                 if (
-                    $status === 'active'
-                    && $subscription->expires_at !== null
-                    && $subscription->expires_at->toDateString() < now()->toDateString()
+                    $status === SubscriptionStatus::Active->value
+                    && $subscription->ends_at !== null
+                    && $subscription->ends_at->toDateString() < now()->toDateString()
                 ) {
-                    $status = 'expired';
+                    $status = SubscriptionStatus::Expired->value;
                 }
+
+                $paid = $subscription->paidAmount();
 
                 return [
                     'id' => $subscription->id,
-                    'package' => $subscription->package->title,
-                    'remaining_sessions' => $subscription->remaining_sessions,
+                    'title' => $subscription->title,
+                    'course' => $subscription->course?->title,
+                    'total_amount' => round((float) $subscription->total_amount, 2),
+                    'paid_amount' => $paid,
+                    'remaining_amount' => $subscription->remainingAmount(),
                     'starts_at' => $subscription->starts_at->toDateString(),
-                    'expires_at' => $subscription->expires_at?->toDateString(),
+                    'ends_at' => $subscription->ends_at?->toDateString(),
                     'status' => $status,
                 ];
             })
@@ -82,6 +104,8 @@ class DashboardController extends Controller
             ->with('teacher:id,name')
             ->orderBy('scheduled_at')
             ->get()
+            ->filter(fn (PrivateLesson $lesson): bool => $calendar->showsPrivateLesson($lesson))
+            ->values()
             ->map(fn (PrivateLesson $lesson): array => [
                 'id' => $lesson->id,
                 'scheduled_at' => $lesson->scheduled_at->format('Y-m-d H:i'),
@@ -130,6 +154,8 @@ class DashboardController extends Controller
             'subscriptions' => $subscriptions,
             'payments' => $payments,
             'privateLessons' => $lessons,
+            'pastLessons' => $history['past'],
+            'upcomingLessons' => $history['upcoming'],
             'lessonLogs' => $logs,
             'events' => $events,
             'teachers' => Directory::options(UserRole::Teacher),

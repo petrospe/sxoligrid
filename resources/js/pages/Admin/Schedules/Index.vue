@@ -8,12 +8,12 @@ const { t } = useI18n()
 
 defineProps({
     schedules: { type: Array, required: true },
-    courses: { type: Array, required: true },
+    sections: { type: Array, required: true },
     teachers: { type: Array, required: true },
 })
 
 const form = useForm({
-    course_id: '',
+    section_id: '',
     teacher_ids: [],
     day_of_week: 1,
     start_time: '17:00',
@@ -46,10 +46,10 @@ function remove(id) {
     <AppLayout>
         <h1 class="text-xl font-semibold">{{ t('nav.timetable') }}</h1>
         <form class="card mt-6 grid gap-3 md:grid-cols-3" @submit.prevent="submit">
-            <label class="text-sm">{{ t('fields.course') }}
-                <select v-model="form.course_id" class="field mt-1" required>
+            <label class="text-sm">{{ t('fields.section') }}
+                <select v-model="form.section_id" class="field mt-1" required>
                     <option value="" disabled>{{ t('common.choose') }}</option>
-                    <option v-for="course in courses" :key="course.id" :value="course.id">{{ course.title }}</option>
+                    <option v-for="section in sections" :key="section.id" :value="section.id">{{ section.label }}</option>
                 </select>
             </label>
             <fieldset class="text-sm md:col-span-3">
@@ -90,12 +90,13 @@ function remove(id) {
         </div>
         <div class="card mt-6 overflow-x-auto">
             <table class="w-full min-w-[720px] text-left text-sm">
-                <thead class="text-[#626F86]"><tr><th class="py-2">{{ t('fields.day') }}</th><th>{{ t('fields.time') }}</th><th>{{ t('fields.course') }}</th><th>{{ t('fields.teachers') }}</th><th>{{ t('fields.room') }}</th><th>{{ t('admin.show_on_landing') }}</th><th></th></tr></thead>
+                <thead class="text-[#626F86]"><tr><th class="py-2">{{ t('fields.day') }}</th><th>{{ t('fields.time') }}</th><th>{{ t('fields.course') }}</th><th>{{ t('fields.section') }}</th><th>{{ t('fields.teachers') }}</th><th>{{ t('fields.room') }}</th><th>{{ t('admin.show_on_landing') }}</th><th></th></tr></thead>
                 <tbody>
                     <tr v-for="item in schedules" :key="item.id" class="border-t border-[#DFE1E6]">
                         <td class="py-3">{{ t('days.' + item.day_of_week) }}</td>
                         <td>{{ item.start_time }}–{{ item.end_time }}</td>
                         <td>{{ item.course.title }}</td>
+                        <td>{{ item.section?.name }}</td>
                         <td>{{ teacherNames(item) }}</td>
                         <td>{{ item.room }}</td>
                         <td>{{ item.visible_on_landing ? t('common.yes') : t('common.no') }}</td>

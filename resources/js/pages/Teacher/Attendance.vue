@@ -45,6 +45,7 @@ function submit() {
     <Head :title="t('actions.attendance')" />
     <AppLayout>
         <h1 class="text-xl font-semibold">{{ schedule.course }}</h1>
+        <p v-if="schedule.section" class="mt-1 text-sm text-[#44546F]">{{ schedule.section }}</p>
         <p class="mt-2 text-[#44546F]">{{ schedule.start_time }}–{{ schedule.end_time }} · {{ schedule.room }}</p>
         <label class="mt-4 block max-w-xs text-sm">{{ t('fields.date') }}
             <input v-model="form.date" class="field mt-1" type="date" @change="changeDate">
@@ -52,12 +53,7 @@ function submit() {
         <form class="mt-6 space-y-3" @submit.prevent="submit">
             <article v-for="(entry, index) in form.entries" :key="entry.student_id" class="card">
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 class="font-semibold">{{ students[index].name }}</h2>
-                        <p class="text-sm text-[#44546F]">
-                            {{ students[index].package_title ? t('teacher.sessions_left', { package: students[index].package_title, count: students[index].remaining_sessions }) : t('teacher.no_session_pack') }}
-                        </p>
-                    </div>
+                    <h2 class="font-semibold">{{ students[index].name }}</h2>
                     <label class="flex items-center gap-2 text-sm">
                         <input v-model="entry.attended" type="checkbox">
                         {{ t('fields.present') }}

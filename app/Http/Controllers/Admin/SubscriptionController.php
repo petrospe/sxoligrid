@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PaymentStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\Package;
+use App\Models\Course;
 use App\Models\StudentSubscription;
 use App\Models\User;
-use App\Services\SubscriptionAssigner;
 use App\Support\Directory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,41 +21,37 @@ class SubscriptionController extends Controller
     public function index(): Response
     {
         $subscriptions = StudentSubscription::query()
-            ->with(['student:id,name', 'package:id,title,sessions_count'])
+            ->with(['student:id,name', 'course:id,title'])
+            ->withSum(['payments as paid_amount' => function ($query): void {
+                $query->where('status', PaymentStatus::Paid);
+            }], 'amount')
             ->orderByDesc('id')
             ->get()
-            ->map(fn (StudentSubscription $subscription): array => [
-                'id' => $subscription->id,
-                'student' => $subscription->student->name,
-                'package' => $subscription->package->title,
-                'remaining_sessions' => $subscription->remaining_sessions,
-                'starts_at' => $subscription->starts_at->toDateString(),
-                'expires_at' => $subscription->expires_at?->toDateString(),
-                'status' => $subscription->status->value,
-            ])
+            ->map(fn (StudentSubscription $subscription): array => $this->present($subscription))
             ->all();
 
         return Inertia::render('Admin/Subscriptions/Index', [
             'subscriptions' => $subscriptions,
             'students' => Directory::options(UserRole::Student),
-            'packages' => Package::query()->with('course:id,title')->orderBy('title')->get()->map(fn (Package $package): array => [
-                'id' => $package->id,
-                'title' => $package->title,
-                'price' => (float) $package->price,
-                'billing_method' => $package->billing_method?->value,
-                'course' => $package->course?->title,
-            ])->all(),
-            'paymentStatuses' => [PaymentStatus::Paid->value, PaymentStatus::Pending->value],
+            'courses' => Course::query()->orderBy('title')->get(['id', 'title'])->all(),
         ]);
     }
 
-    public function store(Request $request, SubscriptionAssigner $assigner): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
+        if ($request->input('course_id') === '') {
+            $request->merge(['course_id' => null]);
+        }
+
         $data = $request->validate([
             'student_id' => ['required', 'integer', 'exists:users,id'],
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'total_amount' => ['required', 'numeric', 'min:0'],
             'starts_at' => ['required', 'date'],
-            'payment_status' => ['required', Rule::in([PaymentStatus::Paid->value, PaymentStatus::Pending->value])],
+            'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
+        ], [
+            'ends_at.after_or_equal' => __('ui.errors.period_order'),
         ]);
 
         $student = User::query()->find($data['student_id']);
@@ -67,13 +62,48 @@ class SubscriptionController extends Controller
             ]);
         }
 
-        $assigner->assign(
-            $student,
-            Package::query()->findOrFail($data['package_id']),
-            $data['starts_at'],
-            PaymentStatus::from($data['payment_status']),
-        );
+        $data['status'] = SubscriptionStatus::Active;
+
+        StudentSubscription::query()->create($data);
 
         return back()->with('success', __('ui.flash.subscription_saved'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function present(StudentSubscription $subscription): array
+    {
+        $paid = $subscription->paidAmount();
+
+        return [
+            'id' => $subscription->id,
+            'student' => $subscription->student->name,
+            'student_id' => $subscription->student_id,
+            'course' => $subscription->course?->title,
+            'course_id' => $subscription->course_id,
+            'title' => $subscription->title,
+            'total_amount' => round((float) $subscription->total_amount, 2),
+            'paid_amount' => $paid,
+            'remaining_amount' => $subscription->remainingAmount(),
+            'starts_at' => $subscription->starts_at->toDateString(),
+            'ends_at' => $subscription->ends_at?->toDateString(),
+            'status' => $this->visibleStatus($subscription),
+        ];
+    }
+
+    private function visibleStatus(StudentSubscription $subscription): string
+    {
+        $status = $subscription->status->value;
+
+        if (
+            $status === SubscriptionStatus::Active->value
+            && $subscription->ends_at !== null
+            && $subscription->ends_at->toDateString() < now()->toDateString()
+        ) {
+            return SubscriptionStatus::Expired->value;
+        }
+
+        return $status;
     }
 }

@@ -35,8 +35,8 @@ class LandingProfile extends Model
             'subtitle_en' => 'Schools · studios · tutoring',
             'description_el' => 'Δημόσια προβολή μαθημάτων, αιθουσών και ωρών. Τα ονόματα των καθηγητών δεν εμφανίζονται στο πρόγραμμα.',
             'description_en' => 'Public view of courses, rooms, and times. Teacher names are not shown on the schedule.',
-            'details_el' => 'Μαθήματα σε τμήματα και ιδιαίτερα, με πληρωμή ανά μήνα, τρίμηνο, πακέτο ή συνεδρία, και ωράριο ανά ημέρα και αίθουσα.',
-            'details_en' => 'Group and private classes, paid monthly, quarterly, by package, or per session, with a timetable by day and room.',
+            'details_el' => 'Μαθήματα σε τμήματα και ιδιαίτερα, με ωράριο ανά ημέρα και αίθουσα. Η πληρωμή είναι συνδρομή μιας περιόδου ή μία φορά ανά μάθημα.',
+            'details_en' => 'Group and private classes, with a timetable by day and room. Payment is a subscription for a period, or once per class.',
         ];
     }
 

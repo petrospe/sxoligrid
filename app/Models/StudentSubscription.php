@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['student_id', 'package_id', 'remaining_sessions', 'starts_at', 'expires_at', 'status'])]
+#[Fillable(['student_id', 'course_id', 'title', 'total_amount', 'starts_at', 'ends_at', 'status'])]
 class StudentSubscription extends Model
 {
     /**
@@ -16,8 +18,9 @@ class StudentSubscription extends Model
     protected function casts(): array
     {
         return [
+            'total_amount' => 'decimal:2',
             'starts_at' => 'date',
-            'expires_at' => 'date',
+            'ends_at' => 'date',
             'status' => SubscriptionStatus::class,
         ];
     }
@@ -27,9 +30,28 @@ class StudentSubscription extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    public function package(): BelongsTo
+    public function course(): BelongsTo
     {
-        return $this->belongsTo(Package::class);
+        return $this->belongsTo(Course::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'subscription_id');
+    }
+
+    public function paidAmount(): float
+    {
+        if (array_key_exists('paid_amount', $this->attributes)) {
+            return round((float) $this->attributes['paid_amount'], 2);
+        }
+
+        return round((float) $this->payments()->where('status', PaymentStatus::Paid)->sum('amount'), 2);
+    }
+
+    public function remainingAmount(): float
+    {
+        return round((float) $this->total_amount - $this->paidAmount(), 2);
     }
 
     public function isUsableOn(string $date): bool
@@ -42,6 +64,6 @@ class StudentSubscription extends Model
             return false;
         }
 
-        return $this->expires_at === null || $this->expires_at->toDateString() >= $date;
+        return $this->ends_at === null || $this->ends_at->toDateString() >= $date;
     }
 }

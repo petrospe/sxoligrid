@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Attendance;
 use App\Models\ClassSchedule;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Expense;
 use App\Models\FlexSuggestion;
 use App\Models\LessonLog;
-use App\Models\Package;
 use App\Models\Payment;
 use App\Models\StudentSubscription;
 use App\Models\TeacherPayroll;
@@ -168,7 +168,7 @@ class AcademyWorkflowTest extends TestCase
         Payment::query()->create([
             'student_id' => $student->id,
             'amount' => 100,
-            'type' => 'monthly_subscription',
+            'type' => 'installment',
             'status' => 'paid',
             'due_date' => '2026-10-15',
             'paid_at' => '2026-10-15 12:00:00',
@@ -176,7 +176,7 @@ class AcademyWorkflowTest extends TestCase
         Payment::query()->create([
             'student_id' => $student->id,
             'amount' => 999,
-            'type' => 'drop_in_ticket',
+            'type' => 'drop_in',
             'status' => 'paid',
             'due_date' => '2026-11-01',
             'paid_at' => '2026-11-01 12:00:00',
@@ -216,38 +216,31 @@ class AcademyWorkflowTest extends TestCase
             );
     }
 
-    public function test_attendance_consumes_a_session_pack_once_per_day_until_it_is_depleted(): void
+    public function test_attendance_is_recorded_once_per_day_without_changing_the_subscription(): void
     {
-        [$teacher, $student, $schedule, $subscription] = $this->attendanceFixture(2);
+        [$teacher, $student, $schedule, $subscription] = $this->attendanceFixture();
 
         $this->mark($teacher, $schedule, $student, '2026-10-21', 'Καλή στάση.');
-        $this->assertSame(1, $subscription->refresh()->remaining_sessions);
+        $this->assertEquals(80, (float) $subscription->refresh()->total_amount);
+        $this->assertSame('active', $subscription->status->value);
         $this->assertSame(1, LessonLog::query()->count());
+        $this->assertSame(1, Attendance::query()->count());
 
         $this->mark($teacher, $schedule, $student, '2026-10-21', null);
-        $this->assertSame(1, $subscription->refresh()->remaining_sessions);
         $this->assertSame(1, LessonLog::query()->count());
+        $this->assertSame(1, Attendance::query()->count());
 
         $this->mark($teacher, $schedule, $student, '2026-10-22', null);
         $subscription->refresh();
 
-        $this->assertSame(0, $subscription->remaining_sessions);
-        $this->assertSame('depleted', $subscription->status->value);
-    }
-
-    public function test_attendance_does_not_decrement_an_unlimited_package(): void
-    {
-        [$teacher, $student, $schedule, $subscription] = $this->attendanceFixture(null);
-
-        $this->mark($teacher, $schedule, $student, '2026-10-22', null);
-
-        $this->assertNull($subscription->refresh()->remaining_sessions);
+        $this->assertSame(2, Attendance::query()->count());
+        $this->assertEquals(80, (float) $subscription->total_amount);
         $this->assertSame('active', $subscription->status->value);
     }
 
     public function test_student_sees_only_their_own_progress_notes(): void
     {
-        [$teacher, $student, $schedule] = $this->attendanceFixture(4);
+        [$teacher, $student, $schedule] = $this->attendanceFixture();
         $other = User::factory()->create(['role' => 'student']);
 
         $this->mark($teacher, $schedule, $student, '2026-10-22', 'Καλή στάση.');
@@ -273,12 +266,11 @@ class AcademyWorkflowTest extends TestCase
 
     public function test_teacher_sees_payments_only_for_students_in_their_courses(): void
     {
-        [$teacher, $student] = $this->attendanceFixture(3);
+        [$teacher, $student] = $this->attendanceFixture();
         $otherTeacher = User::factory()->create(['role' => 'teacher']);
         $otherStudent = User::factory()->create(['role' => 'student', 'name' => 'Κρυφός Μαθητής']);
         $otherCourse = Course::query()->create([
             'title' => 'Πιάνο',
-            'price' => 40,
             'type' => 'private',
         ]);
         ClassSchedule::query()->create([
@@ -297,14 +289,14 @@ class AcademyWorkflowTest extends TestCase
         Payment::query()->create([
             'student_id' => $student->id,
             'amount' => 25,
-            'type' => 'monthly_subscription',
+            'type' => 'installment',
             'status' => 'overdue',
             'due_date' => '2026-10-01',
         ]);
         Payment::query()->create([
             'student_id' => $otherStudent->id,
             'amount' => 999,
-            'type' => 'private_session',
+            'type' => 'drop_in',
             'status' => 'overdue',
             'due_date' => '2026-10-01',
         ]);
@@ -366,7 +358,6 @@ class AcademyWorkflowTest extends TestCase
         ]);
         $course = Course::query()->create([
             'title' => 'Salsa',
-            'price' => 50,
             'type' => 'group',
         ]);
 
@@ -376,7 +367,7 @@ class AcademyWorkflowTest extends TestCase
     /**
      * @return array{0: User, 1: User, 2: ClassSchedule, 3: StudentSubscription}
      */
-    private function attendanceFixture(?int $sessions): array
+    private function attendanceFixture(): array
     {
         [$teacher, $course] = $this->classWithTeacher();
         $student = User::factory()->create(['role' => 'student', 'name' => 'Άννα Βασιλείου']);
@@ -393,18 +384,13 @@ class AcademyWorkflowTest extends TestCase
             'course_id' => $course->id,
             'status' => 'active',
         ]);
-        $package = Package::query()->create([
-            'title' => $sessions === null ? 'Unlimited' : 'Πακέτο συνεδριών',
-            'price' => 80,
-            'duration_days' => 30,
-            'sessions_count' => $sessions,
-        ]);
         $subscription = StudentSubscription::query()->create([
             'student_id' => $student->id,
-            'package_id' => $package->id,
-            'remaining_sessions' => $sessions,
+            'course_id' => $course->id,
+            'title' => 'Salsa 2026-2027',
+            'total_amount' => 80,
             'starts_at' => '2026-10-01',
-            'expires_at' => '2026-12-31',
+            'ends_at' => '2026-12-31',
             'status' => 'active',
         ]);
 

@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Enums\EnrollmentStatus;
-use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\ClassSchedule;
-use App\Models\StudentSubscription;
 use App\Services\AttendanceRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,9 +19,9 @@ class AttendanceController extends Controller
         abort_unless($schedule->taughtBy($request->user()), 403);
 
         $date = $this->date($request);
-        $schedule->load('course:id,title');
+        $schedule->load(['course:id,title', 'section:id,name']);
 
-        $enrollments = $schedule->course->enrollments()
+        $enrollments = $schedule->section->enrollments()
             ->where('status', EnrollmentStatus::Active)
             ->with('student:id,name')
             ->get();
@@ -33,31 +31,18 @@ class AttendanceController extends Controller
             ->whereDate('attended_on', $date)
             ->pluck('student_id');
 
-        $packs = StudentSubscription::query()
-            ->with('package:id,title')
-            ->whereIn('student_id', $enrollments->pluck('student_id'))
-            ->where('status', SubscriptionStatus::Active)
-            ->whereNotNull('remaining_sessions')
-            ->get()
-            ->groupBy('student_id');
-
-        $students = $enrollments->map(function ($enrollment) use ($attended, $packs): array {
-            $pack = $packs->get($enrollment->student_id)?->sortBy('expires_at')->first();
-
-            return [
-                'id' => $enrollment->student->id,
-                'name' => $enrollment->student->name,
-                'attended' => $attended->contains($enrollment->student_id),
-                'remaining_sessions' => $pack?->remaining_sessions,
-                'package_title' => $pack?->package?->title,
-            ];
-        })->values()->all();
+        $students = $enrollments->map(fn ($enrollment): array => [
+            'id' => $enrollment->student->id,
+            'name' => $enrollment->student->name,
+            'attended' => $attended->contains($enrollment->student_id),
+        ])->values()->all();
 
         return Inertia::render('Teacher/Attendance', [
             'date' => $date,
             'schedule' => [
                 'id' => $schedule->id,
                 'course' => $schedule->course->title,
+                'section' => $schedule->section->name,
                 'start_time' => substr((string) $schedule->start_time, 0, 5),
                 'end_time' => substr((string) $schedule->end_time, 0, 5),
                 'room' => $schedule->room,
