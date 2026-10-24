@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
+import SuggestionField from '@/Components/SuggestionField.vue'
 import { dayValues, useI18n } from '@/i18n'
 
 const { t } = useI18n()
@@ -9,6 +10,7 @@ const props = defineProps({
     schedule: { type: Object, required: true },
     sections: { type: Array, required: true },
     teachers: { type: Array, required: true },
+    rooms: { type: Array, required: true },
 })
 
 const form = useForm({
@@ -56,7 +58,9 @@ function submit() {
                 <input v-model="form.end_time" class="field mt-1" type="time" required>
                 <span v-if="form.errors.end_time" class="error">{{ form.errors.end_time }}</span>
             </label>
-            <label class="text-sm">{{ t('fields.room') }}<input v-model="form.room" class="field mt-1" required></label>
+            <label class="text-sm">{{ t('fields.room') }}
+                <SuggestionField v-model="form.room" :options="rooms" :label="t('fields.room')" />
+            </label>
             <label class="flex items-center gap-2 text-sm">
                 <input v-model="form.visible_on_landing" class="h-4 w-4" type="checkbox">
                 {{ t('admin.show_on_landing') }}

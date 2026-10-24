@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
+import SuggestionField from '@/Components/SuggestionField.vue'
 import WeeklyGrid from '@/Components/WeeklyGrid.vue'
 import { dayValues, useI18n } from '@/i18n'
 
@@ -10,6 +11,7 @@ defineProps({
     schedules: { type: Array, required: true },
     sections: { type: Array, required: true },
     teachers: { type: Array, required: true },
+    rooms: { type: Array, required: true },
 })
 
 const form = useForm({
@@ -75,7 +77,7 @@ function remove(id) {
                 <span v-if="form.errors.end_time" class="error">{{ form.errors.end_time }}</span>
             </label>
             <label class="text-sm">{{ t('fields.room') }}
-                <input v-model="form.room" class="field mt-1" required>
+                <SuggestionField v-model="form.room" :options="rooms" :label="t('fields.room')" />
             </label>
             <label class="flex items-center gap-2 text-sm md:col-span-3">
                 <input v-model="form.visible_on_landing" class="h-4 w-4" type="checkbox">

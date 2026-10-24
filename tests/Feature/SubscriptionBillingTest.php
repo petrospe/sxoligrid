@@ -212,6 +212,7 @@ class SubscriptionBillingTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('subscriptions.0.title', 'Αγγλικά D senior 2026-2027')
+                ->where('titles', ['Αγγλικά D senior 2026-2027'])
                 ->where('subscriptions.0.total_amount', 1800)
                 ->where('subscriptions.0.paid_amount', 200)
                 ->where('subscriptions.0.remaining_amount', 1600)

@@ -34,6 +34,7 @@ class SubscriptionController extends Controller
             'subscriptions' => $subscriptions,
             'students' => Directory::options(UserRole::Student),
             'courses' => Course::query()->orderBy('title')->get(['id', 'title'])->all(),
+            'titles' => $this->titles(),
         ]);
     }
 
@@ -67,6 +68,29 @@ class SubscriptionController extends Controller
         StudentSubscription::query()->create($data);
 
         return back()->with('success', __('ui.flash.subscription_saved'));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function titles(): array
+    {
+        $titles = [];
+
+        foreach (StudentSubscription::query()->orderBy('title')->pluck('title') as $title) {
+            $label = trim((string) $title);
+
+            if ($label === '') {
+                continue;
+            }
+
+            $titles[mb_strtolower($label)] ??= $label;
+        }
+
+        $labels = array_values($titles);
+        usort($labels, static fn (string $left, string $right): int => strnatcasecmp($left, $right));
+
+        return $labels;
     }
 
     /**

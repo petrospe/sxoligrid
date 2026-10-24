@@ -110,6 +110,7 @@ class TimetableTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('schedules.0.visible_on_landing', false)
+                ->where('rooms', ['Studio 1'])
                 ->where('schedules.0.teachers', [
                     ['id' => $maria->id, 'name' => 'Μαρία Παπαδοπούλου'],
                     ['id' => $kostas->id, 'name' => 'Κώστας Δημητρίου'],

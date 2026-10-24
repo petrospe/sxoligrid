@@ -1,12 +1,14 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
+import SuggestionField from '@/Components/SuggestionField.vue'
 import { useI18n } from '@/i18n'
 
 defineProps({
     subscriptions: { type: Array, required: true },
     students: { type: Array, required: true },
     courses: { type: Array, required: true },
+    titles: { type: Array, required: true },
 })
 
 const { t, money } = useI18n()
@@ -47,7 +49,7 @@ function submit() {
                 </select>
             </label>
             <label class="text-sm md:col-span-2">{{ t('fields.title') }}
-                <input v-model="form.title" class="field mt-1" required>
+                <SuggestionField v-model="form.title" :options="titles" :label="t('fields.title')" />
                 <span v-if="form.errors.title" class="error">{{ form.errors.title }}</span>
             </label>
             <label class="text-sm">{{ t('fields.total') }}

@@ -29,6 +29,7 @@ class ScheduleController extends Controller
             'schedules' => ScheduleMapper::withTeacher($schedules),
             'sections' => $this->sections(),
             'teachers' => Directory::options(UserRole::Teacher),
+            'rooms' => $this->rooms(),
         ]);
     }
 
@@ -47,6 +48,7 @@ class ScheduleController extends Controller
             'schedule' => ScheduleMapper::withTeacher(collect([$schedule]))[0],
             'sections' => $this->sections(),
             'teachers' => Directory::options(UserRole::Teacher),
+            'rooms' => $this->rooms(),
         ]);
     }
 
@@ -79,6 +81,29 @@ class ScheduleController extends Controller
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function rooms(): array
+    {
+        $rooms = [];
+
+        foreach (ClassSchedule::query()->orderBy('room')->pluck('room') as $room) {
+            $label = trim((string) $room);
+
+            if ($label === '') {
+                continue;
+            }
+
+            $rooms[mb_strtolower($label)] ??= $label;
+        }
+
+        $labels = array_values($rooms);
+        usort($labels, static fn (string $left, string $right): int => strnatcasecmp($left, $right));
+
+        return $labels;
     }
 
     /**
