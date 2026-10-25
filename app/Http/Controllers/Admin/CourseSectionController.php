@@ -21,6 +21,19 @@ class CourseSectionController extends Controller
         return back()->with('success', __('ui.flash.section_created'));
     }
 
+    public function update(Request $request, Course $course, CourseSection $section): RedirectResponse
+    {
+        abort_unless($section->course_id === $course->id, 404);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $section->update($data);
+
+        return back()->with('success', __('ui.flash.section_updated'));
+    }
+
     public function destroy(Course $course, CourseSection $section): RedirectResponse
     {
         abort_unless($section->course_id === $course->id, 404);

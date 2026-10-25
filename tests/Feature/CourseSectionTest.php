@@ -137,4 +137,30 @@ class CourseSectionTest extends TestCase
                 ->where('students.0.name', 'Γιάννης Αλεξίου')
             );
     }
+
+    public function test_a_section_name_can_be_changed(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $course = Course::query()->create([
+            'title' => 'Salsa advanced',
+            'type' => 'group',
+        ]);
+        $section = $course->sections()->create(['name' => 'Δευτέρα 19:00']);
+        $other = Course::query()->create([
+            'title' => 'Bachata',
+            'type' => 'group',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.courses.sections.update', [$course, $section]), ['name' => 'Δευτέρα 20:00'])
+            ->assertRedirect();
+
+        $this->assertSame('Δευτέρα 20:00', $section->fresh()->name);
+
+        $this->actingAs($admin)
+            ->put(route('admin.courses.sections.update', [$other, $section]), ['name' => 'Λάθος μάθημα'])
+            ->assertNotFound();
+
+        $this->assertSame('Δευτέρα 20:00', $section->fresh()->name);
+    }
 }

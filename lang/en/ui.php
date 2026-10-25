@@ -387,6 +387,7 @@ return [
         'course_deleted' => 'The course was deleted.',
         'course_delete_blocked' => 'The course has linked records and cannot be deleted.',
         'section_created' => 'The section was created.',
+        'section_updated' => 'The section was updated.',
         'section_deleted' => 'The section was deleted.',
         'schedule_saved' => 'The timetable slot was saved.',
         'schedule_updated' => 'The timetable slot was updated.',

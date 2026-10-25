@@ -387,6 +387,7 @@ return [
         'course_deleted' => 'Το μάθημα διαγράφηκε.',
         'course_delete_blocked' => 'Το μάθημα έχει συνδεδεμένες εγγραφές και δεν μπορεί να διαγραφεί.',
         'section_created' => 'Το τμήμα δημιουργήθηκε.',
+        'section_updated' => 'Το τμήμα ενημερώθηκε.',
         'section_deleted' => 'Το τμήμα διαγράφηκε.',
         'schedule_saved' => 'Το ωράριο αποθηκεύτηκε.',
         'schedule_updated' => 'Το ωράριο ενημερώθηκε.',

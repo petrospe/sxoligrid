@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Components/AppLayout.vue'
 import { useI18n } from '@/i18n'
@@ -50,6 +51,28 @@ function removeSection(course, section) {
         router.delete(`/admin/courses/${course.id}/sections/${section.id}`)
     }
 }
+
+const editingId = ref(null)
+const editForm = useForm({ name: '' })
+
+function startEdit(section) {
+    editingId.value = section.id
+    editForm.name = section.name
+    editForm.clearErrors()
+}
+
+function cancelEdit() {
+    editingId.value = null
+    editForm.reset()
+    editForm.clearErrors()
+}
+
+function saveSection(course, section) {
+    editForm.put(`/admin/courses/${course.id}/sections/${section.id}`, {
+        preserveScroll: true,
+        onSuccess: () => cancelEdit(),
+    })
+}
 </script>
 
 <template>
@@ -86,8 +109,19 @@ function removeSection(course, section) {
                             <p v-if="course.sections.length === 0" class="text-[#626F86]">{{ t('admin.no_sections') }}</p>
                             <article v-for="section in course.sections" :key="section.id" class="mb-4">
                                 <div class="flex items-start justify-between gap-3">
-                                    <h2 class="font-medium">{{ section.name }}</h2>
-                                    <button class="btn-danger" type="button" @click="removeSection(course, section)">{{ t('actions.delete') }}</button>
+                                    <form v-if="editingId === section.id" class="flex flex-wrap items-end gap-2" @submit.prevent="saveSection(course, section)">
+                                        <label class="text-sm">{{ t('fields.section') }}
+                                            <input v-model="editForm.name" class="field mt-1" required>
+                                            <span v-if="editForm.errors.name" class="error">{{ editForm.errors.name }}</span>
+                                        </label>
+                                        <button class="btn" :disabled="editForm.processing">{{ t('actions.save') }}</button>
+                                        <button class="btn-soft" type="button" @click="cancelEdit">{{ t('actions.cancel') }}</button>
+                                    </form>
+                                    <h2 v-else class="font-medium">{{ section.name }}</h2>
+                                    <div v-if="editingId !== section.id" class="space-x-2">
+                                        <button class="btn-soft" type="button" @click="startEdit(section)">{{ t('actions.edit') }}</button>
+                                        <button class="btn-danger" type="button" @click="removeSection(course, section)">{{ t('actions.delete') }}</button>
+                                    </div>
                                 </div>
                                 <ul v-if="section.schedules.length > 0" class="mt-1 space-y-1 text-[#44546F]">
                                     <li v-for="slot in section.schedules" :key="slot.id">
