@@ -35,6 +35,7 @@ return [
         'amount' => 'ποσό',
         'phone' => 'τηλέφωνο',
         'role' => 'ρόλος',
+        'roles' => 'ρόλοι',
         'room' => 'αίθουσα',
         'start_time' => 'έναρξη',
         'end_time' => 'λήξη',

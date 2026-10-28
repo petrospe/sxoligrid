@@ -9,6 +9,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -92,7 +93,8 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
-            'role' => ['required', Rule::in($this->assignableRoles($request->user()))],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['string', 'distinct', Rule::in($this->assignableRoles($request->user()))],
             'phone' => ['nullable', 'string', 'max:30'],
             'can_view_finances' => ['sometimes', 'boolean'],
         ]);
@@ -101,13 +103,22 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        $data['can_view_finances'] = $request->user()->isOwner()
-            && $data['role'] === UserRole::Admin->value
-            && $request->boolean('can_view_finances');
+        $data['roles'] = User::normalizeRoles($data['roles']);
 
-        if ($data['role'] === UserRole::Owner->value) {
-            $data['can_view_finances'] = true;
+        if ($user?->is($request->user()) && $request->user()->isOwner() && ! in_array(UserRole::Owner->value, $data['roles'], true)) {
+            throw ValidationException::withMessages([
+                'roles' => __('ui.errors.keep_own_owner_role'),
+            ]);
         }
+
+        $isOwner = in_array(UserRole::Owner->value, $data['roles'], true);
+        $isAdmin = in_array(UserRole::Admin->value, $data['roles'], true);
+
+        $data['can_view_finances'] = $isOwner || (
+            $request->user()->isOwner()
+            && $isAdmin
+            && $request->boolean('can_view_finances')
+        );
 
         return $data;
     }
@@ -122,7 +133,7 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'phone' => $user->phone,
-            'role' => $user->role->value,
+            'roles' => $user->roleValues(),
             'can_view_finances' => $user->can_view_finances,
         ];
     }

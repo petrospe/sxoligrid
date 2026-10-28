@@ -24,6 +24,10 @@ function submit() {
 function remove(participant) {
     router.delete(`${props.baseUrl}/participants/${participant.id}`)
 }
+
+function schoolRoles(roles) {
+    return (roles ?? []).map((role) => t('roles.' + role)).join(' · ')
+}
 </script>
 
 <template>
@@ -36,7 +40,7 @@ function remove(participant) {
             <label class="text-sm">{{ t('fields.person') }}
                 <select v-model="form.user_id" class="field mt-1" required>
                     <option value="" disabled>{{ t('common.choose') }}</option>
-                    <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }} · {{ t('roles.' + person.role) }}</option>
+                    <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }} · {{ schoolRoles(person.roles) }}</option>
                 </select>
             </label>
             <label class="text-sm">{{ t('fields.event_role') }}
@@ -52,7 +56,7 @@ function remove(participant) {
                 <tbody>
                     <tr v-for="participant in event.participants" :key="participant.id" class="border-t border-[#DFE1E6]">
                         <td class="py-3">{{ participant.user.name }}</td>
-                        <td>{{ t('roles.' + participant.user.role) }}</td>
+                        <td>{{ schoolRoles(participant.user.roles) }}</td>
                         <td>{{ t('event_roles.' + participant.role_in_event) }}</td>
                         <td class="text-right"><button class="btn-danger" type="button" @click="remove(participant)">{{ t('actions.remove') }}</button></td>
                     </tr>

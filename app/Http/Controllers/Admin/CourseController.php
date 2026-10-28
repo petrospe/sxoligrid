@@ -21,9 +21,9 @@ class CourseController extends Controller
     {
         $courses = Course::query()
             ->with([
-                'sections.enrollments.student:id,name,role',
-                'sections.schedules.teacher:id,name,role',
-                'sections.schedules.teachers:id,name,role',
+                'sections.enrollments.student:id,name',
+                'sections.schedules.teacher:id,name',
+                'sections.schedules.teachers:id,name',
             ])
             ->orderBy('title')
             ->get()
@@ -135,11 +135,11 @@ class CourseController extends Controller
 
         foreach ($section->schedules as $schedule) {
             if ($schedule->teacher instanceof User) {
-                $people[$schedule->teacher->id] = $this->person($schedule->teacher, null);
+                $people[$schedule->teacher->id] = $this->person($schedule->teacher, 'teacher', null);
             }
 
             foreach ($schedule->teachers as $teacher) {
-                $people[$teacher->id] = $this->person($teacher, null);
+                $people[$teacher->id] = $this->person($teacher, 'teacher', null);
             }
         }
 
@@ -150,7 +150,7 @@ class CourseController extends Controller
                 continue;
             }
 
-            $people[$student->id] = $this->person($student, $enrollment->status->value);
+            $people[$student->id] = $this->person($student, 'student', $enrollment->status->value);
         }
 
         $list = array_values($people);
@@ -166,12 +166,12 @@ class CourseController extends Controller
     /**
      * @return array{id: int, name: string, role: string, status: string|null}
      */
-    private function person(User $user, ?string $status): array
+    private function person(User $user, string $role, ?string $status): array
     {
         return [
             'id' => $user->id,
             'name' => $user->name,
-            'role' => $user->role->value,
+            'role' => $role,
             'status' => $status,
         ];
     }

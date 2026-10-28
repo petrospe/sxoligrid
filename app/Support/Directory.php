@@ -13,7 +13,7 @@ final class Directory
     public static function options(UserRole $role): array
     {
         return User::query()
-            ->where('role', $role)
+            ->withRole($role)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (User $user): array => [

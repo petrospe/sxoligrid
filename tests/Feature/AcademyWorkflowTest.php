@@ -135,7 +135,7 @@ class AcademyWorkflowTest extends TestCase
         $this->actingAs($owner)->put(route('admin.users.update', $admin), [
             'name' => $admin->name,
             'email' => $admin->email,
-            'role' => 'admin',
+            'roles' => ['admin'],
             'phone' => null,
             'can_view_finances' => true,
         ])->assertRedirect(route('admin.users.index'));
@@ -152,9 +152,9 @@ class AcademyWorkflowTest extends TestCase
         $this->actingAs($admin)->put(route('admin.users.update', $admin), [
             'name' => $admin->name,
             'email' => $admin->email,
-            'role' => 'owner',
+            'roles' => ['owner'],
             'phone' => null,
-        ])->assertSessionHasErrors('role');
+        ])->assertSessionHasErrors('roles.0');
 
         $this->assertTrue($admin->refresh()->isAdmin());
     }

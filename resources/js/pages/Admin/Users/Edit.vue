@@ -16,10 +16,14 @@ const form = useForm({
     name: props.user.name,
     email: props.user.email,
     password: '',
-    role: props.user.role,
+    roles: [...props.user.roles],
     phone: props.user.phone ?? '',
     can_view_finances: props.user.can_view_finances,
 })
+
+function hasRole(role) {
+    return form.roles.includes(role)
+}
 
 function submit() {
     form.put(`/admin/users/${props.user.id}`)
@@ -43,20 +47,25 @@ function submit() {
                 <input v-model="form.password" class="field mt-1" type="password" :placeholder="t('common.password_unchanged')">
                 <span v-if="form.errors.password" class="error">{{ form.errors.password }}</span>
             </label>
-            <label class="text-sm">{{ t('fields.role') }}
-                <select v-model="form.role" class="field mt-1">
-                    <option v-for="role in roles" :key="role" :value="role">{{ t('roles.' + role) }}</option>
-                </select>
-                <span v-if="form.errors.role" class="error">{{ form.errors.role }}</span>
-            </label>
+            <fieldset class="text-sm">
+                <legend>{{ t('fields.roles') }}</legend>
+                <p class="mt-1 text-[#626F86]">{{ t('admin.roles_hint') }}</p>
+                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                    <label v-for="role in roles" :key="role" class="flex items-center gap-2">
+                        <input v-model="form.roles" :value="role" class="h-4 w-4" type="checkbox">
+                        {{ t('roles.' + role) }}
+                    </label>
+                </div>
+                <span v-if="form.errors.roles || form.errors['roles.0']" class="error">{{ form.errors.roles || form.errors['roles.0'] }}</span>
+            </fieldset>
             <label class="text-sm">{{ t('fields.phone') }}
                 <input v-model="form.phone" class="field mt-1">
             </label>
-            <label v-if="actor.role === 'owner' && form.role === 'admin'" class="flex items-center gap-2 text-sm">
+            <label v-if="actor.roles.includes('owner') && hasRole('admin') && !hasRole('owner')" class="flex items-center gap-2 text-sm">
                 <input v-model="form.can_view_finances" type="checkbox">
                 {{ t('admin.finance_access') }}
             </label>
-            <p v-else-if="user.role === 'owner'" class="text-sm text-[#44546F]">{{ t('admin.owner_always_sees_finances') }}</p>
+            <p v-else-if="hasRole('owner')" class="text-sm text-[#44546F]">{{ t('admin.owner_always_sees_finances') }}</p>
             <button class="btn w-fit" :disabled="form.processing">{{ t('actions.save') }}</button>
         </form>
     </AppLayout>

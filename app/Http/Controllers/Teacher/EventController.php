@@ -31,7 +31,7 @@ class EventController extends Controller
 
     public function show(Event $event): Response
     {
-        $event->load('participants.user:id,name,role');
+        $event->load('participants.user:id,name,roles');
 
         return Inertia::render('Events/Show', [
             'event' => [
@@ -46,14 +46,14 @@ class EventController extends Controller
                     'user' => [
                         'id' => $participant->user->id,
                         'name' => $participant->user->name,
-                        'role' => $participant->user->role->value,
+                        'roles' => $participant->user->roleValues(),
                     ],
                 ])->all(),
             ],
-            'people' => User::query()->orderBy('name')->get(['id', 'name', 'role'])->map(fn (User $user): array => [
+            'people' => User::query()->orderBy('name')->get(['id', 'name', 'roles'])->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'role' => $user->role->value,
+                'roles' => $user->roleValues(),
             ])->all(),
             'roles' => EventParticipantRole::values(),
             'baseUrl' => '/teacher/events/'.$event->id,

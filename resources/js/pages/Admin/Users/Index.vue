@@ -16,10 +16,14 @@ const form = useForm({
     name: '',
     email: '',
     password: '',
-    role: 'student',
+    roles: ['student'],
     phone: '',
     can_view_finances: false,
 })
+
+function hasRole(role) {
+    return form.roles.includes(role)
+}
 
 function submit() {
     form.post('/admin/users', {
@@ -51,15 +55,21 @@ function remove(user) {
                 <input v-model="form.password" class="field mt-1" type="password" required>
                 <span v-if="form.errors.password" class="error">{{ form.errors.password }}</span>
             </label>
-            <label class="text-sm">{{ t('fields.role') }}
-                <select v-model="form.role" class="field mt-1">
-                    <option v-for="role in roles" :key="role" :value="role">{{ t('roles.' + role) }}</option>
-                </select>
-            </label>
+            <fieldset class="text-sm">
+                <legend>{{ t('fields.roles') }}</legend>
+                <p class="mt-1 text-[#626F86]">{{ t('admin.roles_hint') }}</p>
+                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                    <label v-for="role in roles" :key="role" class="flex items-center gap-2">
+                        <input v-model="form.roles" :value="role" class="h-4 w-4" type="checkbox">
+                        {{ t('roles.' + role) }}
+                    </label>
+                </div>
+                <span v-if="form.errors.roles || form.errors['roles.0']" class="error">{{ form.errors.roles || form.errors['roles.0'] }}</span>
+            </fieldset>
             <label class="text-sm">{{ t('fields.phone') }}
                 <input v-model="form.phone" class="field mt-1">
             </label>
-            <label v-if="actor.role === 'owner' && form.role === 'admin'" class="flex items-center gap-2 text-sm md:mt-6">
+            <label v-if="actor.roles.includes('owner') && hasRole('admin') && !hasRole('owner')" class="flex items-center gap-2 text-sm md:mt-6">
                 <input v-model="form.can_view_finances" type="checkbox">
                 {{ t('admin.finance_access') }}
             </label>
@@ -83,7 +93,7 @@ function remove(user) {
                         <td class="py-3 font-medium">{{ user.name }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.phone || '—' }}</td>
-                        <td>{{ t('roles.' + user.role) }}</td>
+                        <td>{{ user.roles.map((role) => t('roles.' + role)).join(' · ') }}</td>
                         <td class="space-x-2 text-right">
                             <Link class="btn-soft" :href="`/admin/users/${user.id}/edit`">{{ t('actions.edit') }}</Link>
                             <button v-if="user.id !== actor.id" class="btn-danger" type="button" @click="remove(user)">{{ t('actions.delete') }}</button>

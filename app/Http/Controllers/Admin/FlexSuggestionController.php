@@ -21,7 +21,7 @@ class FlexSuggestionController extends Controller
     {
         return Inertia::render('Admin/FlexSuggestions/Index', [
             'suggestions' => FlexSuggestion::query()
-                ->with('target:id,name,role')
+                ->with('target:id,name,roles')
                 ->orderByDesc('id')
                 ->get()
                 ->map(fn (FlexSuggestion $suggestion): array => [
@@ -33,7 +33,7 @@ class FlexSuggestionController extends Controller
                 ])
                 ->all(),
             'targets' => User::query()
-                ->whereIn('role', [UserRole::Owner, UserRole::Admin, UserRole::Teacher])
+                ->withRole([UserRole::Owner, UserRole::Admin, UserRole::Teacher])
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn (User $user): array => ['id' => $user->id, 'name' => $user->name])
@@ -52,7 +52,7 @@ class FlexSuggestionController extends Controller
 
         $target = User::query()->find($data['target_user_id']);
 
-        if ($target === null || $target->isStudent()) {
+        if ($target === null || ! $target->hasAny(UserRole::Owner, UserRole::Admin, UserRole::Teacher)) {
             throw ValidationException::withMessages([
                 'target_user_id' => __('ui.errors.suggestion_target'),
             ]);

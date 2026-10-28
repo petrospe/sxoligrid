@@ -64,7 +64,7 @@ class FlexGapFinder
 
         return User::query()
             ->where(function ($query) use ($teacherIds): void {
-                $query->whereIn('role', [UserRole::Owner, UserRole::Admin]);
+                $query->withRole([UserRole::Owner, UserRole::Admin]);
 
                 if ($teacherIds !== []) {
                     $query->orWhereIn('id', $teacherIds);

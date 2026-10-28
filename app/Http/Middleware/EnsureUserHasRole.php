@@ -15,7 +15,7 @@ class EnsureUserHasRole
     {
         $user = $request->user();
 
-        if ($user === null || ! in_array($user->role->value, $roles, true)) {
+        if ($user === null || array_intersect($user->roleValues(), $roles) === []) {
             abort(403);
         }
 

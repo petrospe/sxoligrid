@@ -31,8 +31,8 @@ class DashboardController extends Controller
 
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
-                'students' => User::query()->where('role', UserRole::Student)->count(),
-                'teachers' => User::query()->where('role', UserRole::Teacher)->count(),
+                'students' => User::query()->withRole(UserRole::Student)->count(),
+                'teachers' => User::query()->withRole(UserRole::Teacher)->count(),
                 'courses' => Course::query()->count(),
                 'active_enrollments' => Enrollment::query()->where('status', EnrollmentStatus::Active)->count(),
                 'overdue_payments' => $overdue,

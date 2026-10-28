@@ -26,7 +26,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role->value,
+                    'roles' => $user->roleValues(),
                     'can_view_finances' => $user->canViewFinances(),
                 ] : null,
             ],

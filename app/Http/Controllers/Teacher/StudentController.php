@@ -23,7 +23,7 @@ class StudentController extends Controller
             ->all();
 
         $students = User::query()
-            ->where('role', UserRole::Student)
+            ->withRole(UserRole::Student)
             ->whereHas('enrollments', fn ($query) => $query->whereIn('section_id', $sectionIds))
             ->with('payments')
             ->orderBy('name')
